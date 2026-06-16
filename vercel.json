@@ -1,11 +1,9 @@
 {
   "version": 2,
-  "buildCommand": "",
   "outputDirectory": "public",
   "functions": {
     "api/anthropic.js": {
-      "runtime": "nodejs20.x",
-      "maxDuration": 30
+      "runtime": "nodejs20.x"
     }
   },
   "routes": [
