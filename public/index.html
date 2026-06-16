@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>데시벨 — 경력기술서 자동 생성</title>
+<title>데시벨</title>
 <!-- PDF.js CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <!-- 귀여운 폰트 -->
@@ -212,6 +212,29 @@ body{
 .btn-secondary:hover{ background:var(--gray-200); }
 .btn-secondary:active{ transform:scale(.98); }
 .btn-row{ display:flex; gap:var(--space-8); }
+/* ── Interview Choice Buttons ── */
+.interview-choice-btn{
+  display:flex; align-items:center; gap:12px;
+  padding:13px 16px; width:100%;
+  border:1.5px solid var(--gray-200); border-radius:var(--radius-md);
+  background:white; cursor:pointer; text-align:left;
+  font-family:inherit; font-size:14px; font-weight:500; color:var(--gray-800);
+  transition:all .12s;
+}
+.interview-choice-btn:hover{ border-color:var(--blue-500); background:var(--blue-50); }
+.interview-choice-btn.selected{ border-color:var(--blue-500); background:var(--blue-50); color:var(--blue-600); font-weight:600; }
+.choice-radio{
+  width:18px; height:18px; border-radius:50%; border:2px solid var(--gray-300);
+  flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .12s;
+}
+.interview-choice-btn.selected .choice-radio{
+  border-color:var(--blue-500); background:var(--blue-500);
+}
+.interview-choice-btn.selected .choice-radio::after{
+  content:''; width:6px; height:6px; border-radius:50%; background:white;
+}
+.choice-text{ flex:1; line-height:1.5; }
+
 /* 텍스트 버튼 (첫화면 돌아가기 등) */
 .btn-text{
   background:none; border:none; color:var(--gray-500); font-size:14px; font-weight:500;
@@ -614,7 +637,23 @@ body{
     <div class="bottom-bar">
       <div class="btn-row">
         <button class="btn btn-secondary" style="flex:1;" id="s2BackBtn" onclick="goScreen(0)">이전</button>
-        <button class="btn btn-primary" style="flex:2;" onclick="goToMetrics()">다음</button>
+        <button class="btn btn-primary" style="flex:2;" onclick="goToInterview()">다음</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 2B: 심층 인터뷰 ══ -->
+  <div class="screen" id="screen-2b">
+    <div class="section-wrap" style="flex:1;">
+      <div class="step-eyebrow">심층 인터뷰</div>
+      <div class="section-title">조금 더 알려주세요 🎤</div>
+      <div class="section-desc">입력한 내용을 바탕으로 AI가 질문을 만들었어요.<br>답할수록 수치가 더 정확해져요.</div>
+      <div id="interviewContainer"></div>
+    </div>
+    <div class="bottom-bar">
+      <div class="btn-row">
+        <button class="btn btn-secondary" style="flex:1;" onclick="goScreen(2)">이전</button>
+        <button class="btn btn-primary" style="flex:2;" onclick="goToMetrics()">수치 제안받기</button>
       </div>
     </div>
   </div>
@@ -701,6 +740,8 @@ const state = {
   currentScreen: 0,
   uploadedFile: null,
   projectData: {},
+  interviewQuestions: [],   // AI가 생성한 심층 질문 4개
+  interviewAnswers: {},     // { qId: { selected: '', custom: '' } }
   selectedMetrics: {},
   generatedResume: null,
   currentTone: '전문적',
@@ -1022,16 +1063,23 @@ const SCREEN_META = {
   0:    { progress:5,   label:'시작 방법 선택' },
   '1a': { progress:20,  label:'포트폴리오 업로드' },
   '1b': { progress:35,  label:'파일 분석 중...' },
-  2:    { progress:55,  label:'프로젝트 정보' },
-  3:    { progress:75,  label:'AI 수치 제안' },
+  2:    { progress:45,  label:'프로젝트 정보' },
+  '2b': { progress:65,  label:'심층 인터뷰' },
+  3:    { progress:82,  label:'AI 수치 제안' },
   4:    { progress:100, label:'완성 🎉' },
 };
+function scrollToTop() {
+  // appShell (데스크탑 카드), window (모바일 전체) 둘 다 초기화
+  const shell = document.getElementById('appShell');
+  if (shell) { shell.scrollTop = 0; shell.scrollLeft = 0; }
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+}
 function goScreen(n) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + n);
   if (el) el.classList.add('active');
   state.currentScreen = n;
-  document.getElementById('appShell').scrollTop = 0;
+  scrollToTop();
   const meta = SCREEN_META[String(n)] || SCREEN_META[0];
   updateProgress(meta.progress);
   document.getElementById('headerStep').textContent = meta.label;
@@ -1040,7 +1088,7 @@ function goScreenStr(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   const el = document.getElementById('screen-' + id);
   if (el) el.classList.add('active');
-  document.getElementById('appShell').scrollTop = 0;
+  scrollToTop();
   const meta = SCREEN_META[id] || SCREEN_META[0];
   updateProgress(meta.progress);
   document.getElementById('headerStep').textContent = meta.label;
@@ -1186,16 +1234,163 @@ function parseJsonFromResponse(json) {
 }
 
 /* ═══════════════════════════════════
-   SCREEN 3: 수치 제안
+   SCREEN 2B: 심층 인터뷰
 ═══════════════════════════════════ */
-async function goToMetrics() {
+async function goToInterview() {
   const data = getFormData();
   if (!data.workContent.trim()) { showToast('업무 내용을 입력해주세요'); return; }
   if (!data.position || data.position === '포지션 미입력') { showToast('직무 포지션을 선택해주세요'); return; }
   state.projectData = data;
+  state.interviewAnswers = {};
+
+  showLoading('질문을 만들고 있어요', '입력한 내용을 분석하고 있어요...');
+  try {
+    const prompt = buildInterviewPrompt(data);
+    const json   = await callApi(prompt, 'interview');
+    const parsed = parseJsonFromResponse(json);
+    if (!parsed.questions || !Array.isArray(parsed.questions)) throw new Error('questions 배열 없음');
+    state.interviewQuestions = parsed.questions;
+    renderInterview(parsed.questions);
+    goScreenStr('2b');
+  } catch(e) {
+    console.error('[goToInterview]', e);
+    showToast(e.message || '질문 생성에 실패했어요. 다시 시도해주세요.');
+  } finally { hideLoading(); }
+}
+
+function buildInterviewPrompt(data) {
+  return `당신은 경력기술서 전문 컨설턴트입니다.
+아래 프로젝트 정보를 분석해서, 더 정확한 정량 수치를 끌어내기 위한 심층 질문 4개를 JSON으로 만들어주세요.
+각 질문에는 선택지 3개와 자유 입력 옵션이 포함됩니다.
+
+프로젝트: ${data.projectName}
+직무: ${data.position}
+기간: ${data.startDate} ~ ${data.endDate}
+팀 규모: ${data.teamSize}
+업무 내용: ${data.workContent}
+
+다음 JSON 형식으로만 응답하세요 (코드블록 없이 순수 JSON):
+{
+  "questions": [
+    {
+      "id": "q1",
+      "question": "이 업무로 인해 어떤 변화나 개선이 있었나요?",
+      "type": "choice",
+      "choices": [
+        "업무 처리 속도가 눈에 띄게 빨라졌어요",
+        "팀 커뮤니케이션 비용이 줄었어요",
+        "고객/사용자 만족도가 올라갔어요"
+      ]
+    }
+  ]
+}
+
+반드시 4개의 질문을 만들어주세요.
+질문 유형 구성: q1~q3은 type이 "choice" (선택지 3개), q4는 type이 "free" (자유 입력, choices 없음).
+질문은 구체적인 수치를 끌어낼 수 있도록 실용적으로 만들어주세요.
+직무(${data.position})와 업무 내용에 딱 맞는 맞춤 질문을 만들어주세요.`;
+}
+
+function renderInterview(questions) {
+  const container = document.getElementById('interviewContainer');
+  container.innerHTML = '';
+  state.interviewAnswers = {};
+
+  questions.forEach((q, qi) => {
+    state.interviewAnswers[q.id] = { selected: '', custom: '' };
+
+    const wrap = document.createElement('div');
+    wrap.className = 'interview-q-wrap';
+    wrap.style.cssText = 'margin-bottom:28px;';
+
+    // 질문 번호 + 텍스트
+    const qHeader = document.createElement('div');
+    qHeader.style.cssText = 'display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;';
+    qHeader.innerHTML = `
+      <span style="flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--blue-500);color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">${qi+1}</span>
+      <span style="font-size:15px;font-weight:600;color:var(--gray-900);line-height:1.5;">${escHtml(q.question)}</span>
+    `;
+    wrap.appendChild(qHeader);
+
+    if (q.type === 'choice' && q.choices) {
+      // 선택지 버튼들
+      const choiceWrap = document.createElement('div');
+      choiceWrap.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
+      q.choices.forEach((choice, ci) => {
+        const btn = document.createElement('button');
+        btn.className = 'interview-choice-btn';
+        btn.dataset.qid = q.id;
+        btn.dataset.value = choice;
+        btn.innerHTML = `<span class="choice-radio"></span><span class="choice-text">${escHtml(choice)}</span>`;
+        btn.onclick = function() {
+          // 같은 질문의 모든 버튼 선택 해제
+          choiceWrap.querySelectorAll('.interview-choice-btn').forEach(b => b.classList.remove('selected'));
+          this.classList.add('selected');
+          state.interviewAnswers[q.id].selected = choice;
+        };
+        choiceWrap.appendChild(btn);
+      });
+      wrap.appendChild(choiceWrap);
+
+      // 직접 입력 (선택지 아래)
+      const customWrap = document.createElement('div');
+      customWrap.style.cssText = 'margin-top:10px;';
+      const customInput = document.createElement('input');
+      customInput.type = 'text';
+      customInput.className = 'form-input';
+      customInput.placeholder = '또는 직접 입력해주세요 (선택)';
+      customInput.style.cssText = 'font-size:14px;';
+      customInput.oninput = function() {
+        state.interviewAnswers[q.id].custom = this.value;
+        // 직접 입력 시 선택지 해제
+        if (this.value) {
+          choiceWrap.querySelectorAll('.interview-choice-btn').forEach(b => b.classList.remove('selected'));
+          state.interviewAnswers[q.id].selected = '';
+        }
+      };
+      customWrap.appendChild(customInput);
+      wrap.appendChild(customWrap);
+
+    } else {
+      // 자유 입력 (q4)
+      const ta = document.createElement('textarea');
+      ta.className = 'form-textarea';
+      ta.style.cssText = 'min-height:90px;font-size:14px;';
+      ta.placeholder = '자유롭게 작성해주세요. 수치가 있다면 더 좋아요! (예: 월 방문자 3만명, 팀원 8명 등)';
+      ta.oninput = function() { state.interviewAnswers[q.id].custom = this.value; };
+      wrap.appendChild(ta);
+    }
+
+    // 구분선 (마지막 제외)
+    if (qi < questions.length - 1) {
+      const hr = document.createElement('hr');
+      hr.className = 'divider';
+      hr.style.marginTop = '28px';
+      wrap.appendChild(hr);
+    }
+
+    container.appendChild(wrap);
+  });
+}
+
+function getInterviewSummary() {
+  const lines = [];
+  state.interviewQuestions.forEach(q => {
+    const ans = state.interviewAnswers[q.id];
+    const answer = ans?.custom || ans?.selected || '(미답변)';
+    lines.push(`Q: ${q.question}\nA: ${answer}`);
+  });
+  return lines.join('\n\n');
+}
+
+/* ═══════════════════════════════════
+   SCREEN 3: 수치 제안
+═══════════════════════════════════ */
+async function goToMetrics() {
   showLoading('수치를 분석하고 있어요','잠깐만 기다려주세요...');
   try {
-    const json   = await callApi(buildMetricsPrompt(data), 'metrics');
+    const interviewSummary = getInterviewSummary();
+    const json   = await callApi(buildMetricsPrompt(state.projectData, interviewSummary), 'metrics');
     const parsed = parseJsonFromResponse(json);
     if (!parsed.metrics || !Array.isArray(parsed.metrics)) throw new Error('metrics 배열 없음');
     state.metricsData = parsed.metrics;
@@ -1207,16 +1402,21 @@ async function goToMetrics() {
   } finally { hideLoading(); }
 }
 
-function buildMetricsPrompt(data) {
+function buildMetricsPrompt(data, interviewSummary) {
   return `당신은 경력기술서 전문가입니다.
-아래 프로젝트 정보를 분석해서 경력기술서에 쓸 수 있는 정량 수치를 JSON으로만 응답해주세요.
+아래 프로젝트 정보와 심층 인터뷰 답변을 종합해서, 경력기술서에 쓸 수 있는 정량 수치를 JSON으로만 응답해주세요.
+인터뷰 답변을 최대한 반영해서 더 구체적이고 신뢰도 높은 수치를 제안해주세요.
 
+[프로젝트 정보]
 프로젝트: ${data.projectName}
 직무: ${data.position}
 기간: ${data.startDate} ~ ${data.endDate}
 팀 규모: ${data.teamSize}
 기여도: ${data.contribution}%
 업무 내용: ${data.workContent}
+
+[심층 인터뷰 답변]
+${interviewSummary}
 
 다음 JSON 형식으로만 응답하세요 (코드블록 없이 순수 JSON):
 {"metrics":[{"id":"m1","sentence":"업무 설명 문장(수치 제외,60자 이내)","options":[{"label":"보수적 수치 표현","basis":"추정 근거"},{"label":"중간 수치 표현","basis":"추정 근거"},{"label":"적극적 수치 표현","basis":"추정 근거"}]}]}
@@ -1274,9 +1474,10 @@ async function generateResume() {
 function buildResumePrompt(data, metrics, tone) {
   const ml = Object.values(metrics).filter(Boolean).join('\n- ');
   const tg = {'전문적':'전문적이고 성과 중심적인 어투, 동사형 마무리.','간결하게':'짧고 핵심만, 군더더기 없이.','자세하게':'상세하고 맥락 풍부하게, 과정과 결과 충분히.'};
+  const interviewCtx = state.interviewQuestions.length > 0 ? `\n[심층 인터뷰 답변]\n${getInterviewSummary()}` : '';
   return `당신은 10년 경력의 경력기술서 전문 작가입니다.
 [프로젝트] ${data.projectName} | ${data.companyName} | ${data.startDate}~${data.endDate} | ${data.position} | ${data.teamSize} | 기여도${data.contribution}% | 툴:${data.tools}
-[업무내용] ${data.workContent}
+[업무내용] ${data.workContent}${interviewCtx}
 [선택수치] - ${ml}
 [톤] ${tg[tone]||tg['전문적']}
 다음 JSON으로만 응답 (코드블록 없이):
