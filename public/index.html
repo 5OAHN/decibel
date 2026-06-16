@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>데시벨 — 경력기술서 자동 생성</title>
+<!-- PDF.js CDN -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<!-- 귀여운 폰트 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════════════════
+   TOSS DESIGN SYSTEM TOKENS
+════════════════════════════════════════════ */
+:root {
+  --blue-50:#EBF1FF; --blue-100:#D6E4FF;
+  --blue-500:#3182F6; --blue-600:#1B6EF3; --blue-700:#1558D6;
+  --gray-50:#F9FAFB; --gray-100:#F2F4F6; --gray-200:#E5E8EB;
+  --gray-300:#D1D6DB; --gray-400:#B0B8C1; --gray-500:#8B95A1;
+  --gray-600:#6B7684; --gray-700:#4E5968; --gray-800:#333D4B; --gray-900:#191F28;
+  --red-500:#F04452; --green-500:#00C471; --orange-500:#FF9500;
+  --yellow-bg:#FFFBE6; --yellow-border:#FFE066;
+  --highlight-yellow:#FFF176; --highlight-green:#B9F6CA;
+  --radius-sm:6px; --radius-md:10px; --radius-lg:14px; --radius-xl:18px; --radius-full:9999px;
+  --shadow-sm:0 1px 2px rgba(0,0,0,.06); --shadow-md:0 4px 12px rgba(0,0,0,.08); --shadow-lg:0 8px 24px rgba(0,0,0,.10);
+  --space-2:2px; --space-4:4px; --space-6:6px; --space-8:8px; --space-10:10px;
+  --space-12:12px; --space-16:16px; --space-20:20px; --space-24:24px;
+  --space-28:28px; --space-32:32px; --space-40:40px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{-webkit-text-size-adjust:100%;}
+body{
+  font-family:-apple-system,'Pretendard','Apple SD Gothic Neo',BlinkMacSystemFont,'Segoe UI',sans-serif;
+  background:var(--gray-100); color:var(--gray-900);
+  min-height:100vh; font-size:15px; line-height:1.5; -webkit-font-smoothing:antialiased;
+}
+
+/* ── App Shell ── */
+.app-shell{
+  max-width:600px; margin:0 auto; min-height:100vh;
+  display:flex; flex-direction:column; background:white; position:relative;
+}
+
+/* ══════════════════════════════
+   SPLASH SCREEN
+══════════════════════════════ */
+#splash{
+  position:fixed; inset:0; z-index:9999;
+  background:#ffffff;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:0;
+  transition:opacity .6s cubic-bezier(.4,0,.2,1);
+}
+#splash.hide{ opacity:0; pointer-events:none; }
+
+/* 로고 심볼 — 우퍼 바운스 */
+.splash-icon{
+  width:88px; height:88px; border-radius:24px;
+  background:linear-gradient(145deg,#3182F6 0%,#5B5EF4 100%);
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 12px 40px rgba(49,130,246,.28), 0 2px 8px rgba(49,130,246,.14);
+  animation:wooferIn .55s cubic-bezier(.34,1.72,.64,1) both,
+            wooferPulse 2.2s 0.65s ease-in-out infinite;
+  will-change:transform;
+}
+@keyframes wooferIn{
+  0%  { opacity:0; transform:scale(.35) translateY(24px); }
+  55% { opacity:1; transform:scale(1.14) translateY(-7px); }
+  78% { transform:scale(.96) translateY(2px); }
+  100%{ transform:scale(1)   translateY(0); }
+}
+@keyframes wooferPulse{
+  0%,100%{ transform:scale(1);    box-shadow:0 12px 40px rgba(49,130,246,.28),0 2px 8px rgba(49,130,246,.14); }
+  40%    { transform:scale(1.08); box-shadow:0 20px 60px rgba(49,130,246,.38),0 4px 16px rgba(49,130,246,.20); }
+  70%    { transform:scale(.96);  box-shadow:0 6px 24px rgba(49,130,246,.18),0 1px 6px rgba(49,130,246,.10); }
+}
+.splash-icon svg{ width:50px; height:50px; }
+
+/* 앱 이름 */
+.splash-name{
+  font-family:'Jua', sans-serif;
+  font-size:40px; color:var(--gray-900); letter-spacing:-1.5px;
+  margin-top:22px;
+  animation:splashFadeUp .5s .18s ease both;
+}
+.splash-name em{ font-style:normal; color:var(--blue-500); }
+
+/* 슬로건 타이포 계층 */
+.splash-slogan{
+  margin-top:16px;
+  text-align:center;
+  line-height:1.7;
+  animation:splashFadeUp .6s .4s ease both;
+}
+.splash-slogan .sl-pre{
+  display:block;
+  font-size:13px; font-weight:400; color:var(--gray-500);
+  letter-spacing:-.1px;
+}
+.splash-slogan .sl-line2{
+  display:block;
+  font-size:14px; letter-spacing:-.2px;
+}
+.splash-slogan .sl-quiet{ font-weight:400; color:var(--gray-400); }
+.splash-slogan .sl-bold { font-weight:700; color:var(--blue-500); }
+
+@keyframes splashFadeUp{
+  from{ opacity:0; transform:translateY(14px); }
+  to  { opacity:1; transform:translateY(0); }
+}
+
+/* ── Header ── */
+.app-header{
+  position:sticky; top:0; z-index:100; background:white;
+  border-bottom:1px solid var(--gray-100); padding:0 var(--space-20);
+  height:56px; display:flex; align-items:center; justify-content:space-between;
+}
+.header-logo{
+  font-family:'Jua', sans-serif;
+  font-size:20px; color:var(--gray-900); letter-spacing:-.3px;
+  display:flex; align-items:center; gap:8px;
+}
+.header-logo-icon{
+  width:28px; height:28px; border-radius:8px;
+  background:linear-gradient(135deg,#3182F6,#7C3AED);
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.header-logo-icon svg{ width:16px; height:16px; }
+.header-logo-text span{ color:var(--blue-500); }
+
+/* ── Progress ── */
+.progress-bar-wrap{ height:3px; background:var(--gray-100); position:sticky; top:56px; z-index:99; }
+.progress-bar-fill{
+  height:100%; background:var(--blue-500);
+  border-radius:0 var(--radius-full) var(--radius-full) 0;
+  transition:width .4s cubic-bezier(.4,0,.2,1);
+}
+
+/* ── Screens ── */
+.screen{ display:none; flex-direction:column; flex:1; }
+.screen.active{ display:flex; }
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.screen.active{ animation:fadeUp .22s ease; }
+
+/* ── Section ── */
+.section-wrap{ padding:var(--space-28) var(--space-20); }
+.step-eyebrow{ font-size:12px; font-weight:700; color:var(--blue-500); letter-spacing:.6px; text-transform:uppercase; margin-bottom:var(--space-8); }
+.section-title{ font-size:22px; font-weight:700; color:var(--gray-900); margin-bottom:var(--space-6); letter-spacing:-.4px; white-space:pre-line; }
+.section-desc{ font-size:14px; color:var(--gray-600); line-height:1.6; margin-bottom:var(--space-24); }
+
+/* ── Cards ── */
+.card{ background:white; border-radius:var(--radius-lg); border:1.5px solid var(--gray-200); padding:var(--space-20); transition:border-color .15s; }
+.card.selected{ border-color:var(--blue-500); background:#F6FAFF; }
+.card+.card{ margin-top:var(--space-12); }
+
+/* ── Form ── */
+.form-group{ margin-bottom:var(--space-20); }
+.form-label{ display:block; font-size:14px; font-weight:600; color:var(--gray-700); margin-bottom:var(--space-8); }
+.form-input,.form-select,.form-textarea{
+  width:100%; padding:13px var(--space-16); border:1.5px solid var(--gray-200);
+  border-radius:var(--radius-md); font-size:15px; color:var(--gray-900); background:white;
+  transition:border-color .15s,box-shadow .15s; font-family:inherit; appearance:none; -webkit-appearance:none;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{
+  outline:none; border-color:var(--blue-500); box-shadow:0 0 0 3px rgba(49,130,246,.12);
+}
+.form-input::placeholder,.form-textarea::placeholder{ color:var(--gray-400); }
+.form-textarea{ resize:vertical; min-height:120px; line-height:1.7; }
+.form-select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238B95A1' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 14px center; padding-right:40px; cursor:pointer;
+}
+.form-row{ display:grid; grid-template-columns:1fr 1fr; gap:var(--space-12); }
+.divider{ border:none; border-top:1px solid var(--gray-100); margin:var(--space-20) 0; }
+
+/* ── Slider ── */
+.slider-row{ display:flex; align-items:center; gap:var(--space-16); }
+.toss-slider{
+  flex:1; -webkit-appearance:none; height:4px;
+  border-radius:var(--radius-full); background:var(--gray-200); outline:none; cursor:pointer;
+}
+.toss-slider::-webkit-slider-thumb{
+  -webkit-appearance:none; width:22px; height:22px; border-radius:50%;
+  background:white; border:2.5px solid var(--blue-500); box-shadow:0 2px 6px rgba(49,130,246,.25); cursor:grab;
+}
+.slider-val{ font-size:16px; font-weight:700; color:var(--blue-500); min-width:40px; text-align:right; }
+
+/* ── Tags ── */
+.tag-group{ display:flex; flex-wrap:wrap; gap:var(--space-8); margin-top:var(--space-8); }
+.tag{
+  padding:6px 14px; border-radius:var(--radius-full); font-size:13px; font-weight:500;
+  border:1.5px solid var(--gray-200); background:white; color:var(--gray-700);
+  cursor:pointer; transition:all .12s; user-select:none;
+}
+.tag.selected{ border-color:var(--blue-500); background:var(--blue-50); color:var(--blue-600); font-weight:600; }
+.tag:active{ transform:scale(.96); }
+
+/* ── Buttons ── */
+.btn{
+  display:flex; align-items:center; justify-content:center; gap:var(--space-8);
+  padding:15px var(--space-20); border-radius:var(--radius-md);
+  font-size:16px; font-weight:700; border:none; cursor:pointer;
+  transition:all .15s; width:100%; font-family:inherit; letter-spacing:-.2px;
+}
+.btn-primary{ background:var(--blue-500); color:white; }
+.btn-primary:hover{ background:var(--blue-600); }
+.btn-primary:active{ background:var(--blue-700); transform:scale(.98); }
+.btn-primary:disabled{ background:var(--gray-200); color:var(--gray-500); cursor:not-allowed; transform:none; }
+.btn-secondary{ background:var(--gray-100); color:var(--gray-800); }
+.btn-secondary:hover{ background:var(--gray-200); }
+.btn-secondary:active{ transform:scale(.98); }
+.btn-row{ display:flex; gap:var(--space-8); }
+/* 텍스트 버튼 (첫화면 돌아가기 등) */
+.btn-text{
+  background:none; border:none; color:var(--gray-500); font-size:14px; font-weight:500;
+  cursor:pointer; padding:10px; text-align:center; width:100%; font-family:inherit;
+  text-decoration:underline; text-underline-offset:3px;
+  transition:color .12s;
+}
+.btn-text:hover{ color:var(--gray-700); }
+
+/* ── Bottom Bar ── */
+.bottom-bar{
+  position:sticky; bottom:0; background:white; border-top:1px solid var(--gray-100);
+  padding:var(--space-16) var(--space-20);
+  padding-bottom:calc(var(--space-16) + env(safe-area-inset-bottom));
+}
+
+/* ── Upload ── */
+.upload-zone{
+  border:2px dashed var(--gray-300); border-radius:var(--radius-lg);
+  padding:var(--space-40) var(--space-20); text-align:center;
+  cursor:pointer; transition:border-color .15s,background .15s; background:var(--gray-50);
+}
+.upload-zone:hover,.upload-zone.drag-over{ border-color:var(--blue-500); background:var(--blue-50); }
+.upload-icon{ font-size:36px; margin-bottom:var(--space-12); }
+.upload-zone-title{ font-size:16px; font-weight:700; color:var(--gray-800); margin-bottom:var(--space-6); }
+.upload-zone-sub{ font-size:13px; color:var(--gray-500); }
+.file-chip{
+  display:flex; align-items:center; gap:var(--space-12); padding:var(--space-16);
+  background:var(--gray-50); border:1px solid var(--gray-200); border-radius:var(--radius-md); margin-top:var(--space-12);
+}
+.file-chip-icon{ font-size:22px; }
+.file-chip-name{ font-size:14px; font-weight:600; color:var(--gray-800); }
+.file-chip-size{ font-size:12px; color:var(--gray-500); }
+.file-chip-remove{ margin-left:auto; font-size:18px; color:var(--gray-400); cursor:pointer; background:none; border:none; }
+
+/* ── Parse Steps ── */
+.parse-step{ display:flex; align-items:center; gap:var(--space-12); padding:14px 0; border-bottom:1px solid var(--gray-100); }
+.parse-step:last-child{ border-bottom:none; }
+.parse-dot{ width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; flex-shrink:0; }
+.parse-dot.done{ background:#E8FBF1; color:var(--green-500); }
+.parse-dot.loading{ background:var(--blue-50); color:var(--blue-500); }
+.parse-dot.wait{ background:var(--gray-100); color:var(--gray-400); }
+.parse-label{ font-size:14px; color:var(--gray-700); font-weight:500; }
+.parse-status{ margin-left:auto; font-size:12px; font-weight:600; }
+.parse-status.done{ color:var(--green-500); }
+.parse-status.loading{ color:var(--blue-500); }
+.parse-status.wait{ color:var(--gray-400); }
+@keyframes spin{ to{ transform:rotate(360deg); } }
+.spin{ display:inline-block; animation:spin .8s linear infinite; }
+
+/* ── Interview Bubble ── */
+.interview-bubble-wrap{ margin-top:var(--space-12); display:flex; flex-direction:column; gap:var(--space-8); }
+.interview-bubble{
+  display:inline-flex; align-items:flex-start; gap:var(--space-8);
+  padding:var(--space-10) 14px; background:var(--blue-50);
+  border:1.5px solid var(--blue-100);
+  border-radius:0 var(--radius-lg) var(--radius-lg) var(--radius-lg);
+  font-size:13px; color:var(--blue-700); line-height:1.5;
+  cursor:pointer; transition:background .12s,border-color .12s,transform .1s;
+  position:relative; max-width:100%;
+}
+.interview-bubble::before{
+  content:''; position:absolute; top:-8px; left:-1px;
+  width:0; height:0; border-style:solid;
+  border-width:0 8px 8px 0; border-color:transparent var(--blue-100) transparent transparent;
+}
+.interview-bubble::after{
+  content:''; position:absolute; top:-6px; left:1px;
+  width:0; height:0; border-style:solid;
+  border-width:0 7px 7px 0; border-color:transparent var(--blue-50) transparent transparent;
+}
+.interview-bubble:hover{ background:var(--blue-100); border-color:var(--blue-500); transform:translateY(-1px); }
+.bubble-icon{ flex-shrink:0; font-size:14px; }
+@keyframes bubbleIn{ from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);} }
+.interview-bubble{ animation:bubbleIn .2s ease both; }
+.interview-bubble:nth-child(2){ animation-delay:.08s; }
+.interview-bubble:nth-child(3){ animation-delay:.16s; }
+
+/* ── Metric Card ── */
+.metric-card{ background:var(--yellow-bg); border:1.5px solid var(--yellow-border); border-radius:var(--radius-lg); padding:var(--space-20); margin-bottom:var(--space-16); }
+.metric-header{ display:flex; align-items:flex-start; gap:var(--space-10); margin-bottom:var(--space-16); }
+.metric-header-icon{ font-size:20px; flex-shrink:0; }
+.metric-header-title{ font-size:15px; font-weight:700; color:var(--gray-900); margin-bottom:var(--space-4); }
+.metric-header-sub{ font-size:12px; color:var(--gray-500); }
+.metric-sentence{ font-size:14px; line-height:1.8; color:var(--gray-700); padding:var(--space-12) var(--space-16); background:white; border-radius:var(--radius-md); margin-bottom:var(--space-10); border:1px solid var(--gray-200); }
+.metric-options{ display:flex; flex-direction:column; gap:var(--space-8); }
+.metric-opt{
+  display:flex; align-items:flex-start; gap:var(--space-12); padding:var(--space-12) var(--space-16);
+  border-radius:var(--radius-md); border:1.5px solid var(--gray-200); background:white;
+  cursor:pointer; text-align:left; font-family:inherit; transition:all .12s;
+}
+.metric-opt:hover{ border-color:var(--blue-500); background:var(--blue-50); }
+.metric-opt.selected{ border-color:var(--blue-500); background:var(--blue-50); }
+.metric-opt-radio{ width:18px; height:18px; border-radius:50%; border:2px solid var(--gray-300); flex-shrink:0; display:flex; align-items:center; justify-content:center; margin-top:2px; transition:all .12s; }
+.metric-opt.selected .metric-opt-radio{ border-color:var(--blue-500); background:var(--blue-500); }
+.metric-opt.selected .metric-opt-radio::after{ content:''; width:6px; height:6px; border-radius:50%; background:white; }
+.metric-opt-text{ font-size:14px; font-weight:500; color:var(--gray-800); }
+.metric-opt.selected .metric-opt-text{ color:var(--blue-600); font-weight:600; }
+.metric-basis{ font-size:12px; color:var(--gray-500); margin-top:var(--space-4); }
+.metric-divider{ border:none; border-top:1px solid rgba(255,224,102,.5); margin:var(--space-16) 0; }
+
+/* ── Warning ── */
+.warn-banner{ display:flex; align-items:flex-start; gap:var(--space-10); padding:var(--space-12) var(--space-16); background:#FFF4F4; border:1px solid #FFD6D9; border-radius:var(--radius-md); margin-top:var(--space-12); }
+.warn-icon{ font-size:16px; flex-shrink:0; }
+.warn-text{ font-size:13px; color:#C0392B; line-height:1.5; }
+
+/* ── Result Card ── */
+.result-card{ background:white; border:1.5px solid var(--gray-200); border-radius:var(--radius-lg); overflow:hidden; margin-bottom:var(--space-16); }
+.result-card-header{ padding:var(--space-16) var(--space-20); background:var(--gray-50); border-bottom:1px solid var(--gray-200); }
+.result-card-title{ font-size:15px; font-weight:700; color:var(--gray-900); }
+.result-card-meta{ font-size:12px; color:var(--gray-500); margin-top:var(--space-4); }
+.result-card-body{ padding:var(--space-20); }
+.result-section{ margin-bottom:var(--space-16); }
+.result-section:last-child{ margin-bottom:0; }
+.result-section-label{ font-size:12px; font-weight:700; color:var(--gray-500); text-transform:uppercase; letter-spacing:.6px; margin-bottom:var(--space-10); }
+.result-item{ display:flex; gap:var(--space-10); padding:var(--space-8) 0; border-bottom:1px solid var(--gray-100); font-size:14px; line-height:1.7; color:var(--gray-800); }
+.result-item:last-child{ border-bottom:none; }
+.result-bullet{ color:var(--blue-500); font-weight:700; flex-shrink:0; margin-top:1px; }
+.result-number{ color:var(--blue-500); font-weight:700; }
+.result-tag{ display:inline-flex; align-items:center; padding:2px 8px; border-radius:var(--radius-full); font-size:11px; font-weight:600; background:var(--blue-50); color:var(--blue-600); margin-right:var(--space-4); }
+
+/* ── Before/After Toggle ── */
+.compare-toggle-row{ display:flex; align-items:center; justify-content:space-between; padding:var(--space-12) var(--space-16); background:var(--gray-50); border:1.5px solid var(--gray-200); border-radius:var(--radius-md); margin-bottom:var(--space-16); }
+.compare-toggle-label{ font-size:14px; font-weight:600; color:var(--gray-800); }
+.compare-toggle-sub{ font-size:12px; color:var(--gray-500); margin-top:2px; }
+.toss-switch{ position:relative; width:44px; height:24px; flex-shrink:0; }
+.toss-switch input{ opacity:0; width:0; height:0; }
+.toss-switch-track{ position:absolute; inset:0; background:var(--gray-300); border-radius:var(--radius-full); cursor:pointer; transition:background .2s; }
+.toss-switch input:checked+.toss-switch-track{ background:var(--blue-500); }
+.toss-switch-thumb{ position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:white; box-shadow:var(--shadow-sm); transition:transform .2s cubic-bezier(.4,0,.2,1); pointer-events:none; }
+.toss-switch input:checked~.toss-switch-thumb{ transform:translateX(20px); }
+.hl-num{ background:var(--highlight-yellow); border-radius:3px; padding:0 2px; }
+.hl-key{ background:var(--highlight-green); border-radius:3px; padding:0 2px; }
+.before-box{ margin-top:var(--space-12); background:#FFFDE7; border:1px solid #FFF176; border-radius:var(--radius-md); padding:var(--space-12) var(--space-16); display:none; }
+.before-box.show{ display:block; }
+.before-box-label{ font-size:11px; font-weight:700; color:#F9A825; letter-spacing:.4px; margin-bottom:var(--space-6); }
+.before-box-text{ font-size:13px; color:var(--gray-600); line-height:1.7; white-space:pre-wrap; }
+
+/* ── Tone ── */
+.tone-row{ display:flex; gap:var(--space-8); margin-bottom:var(--space-16); }
+.tone-btn{ flex:1; padding:9px; border-radius:var(--radius-md); font-size:13px; font-weight:600; cursor:pointer; border:1.5px solid var(--gray-200); background:white; color:var(--gray-700); transition:all .12s; font-family:inherit; }
+.tone-btn.active{ border-color:var(--blue-500); background:var(--blue-50); color:var(--blue-600); }
+
+/* ── Notice ── */
+.notice{ display:flex; align-items:flex-start; gap:var(--space-8); padding:var(--space-12) var(--space-16); background:var(--gray-50); border-radius:var(--radius-md); font-size:13px; color:var(--gray-600); line-height:1.5; margin-top:var(--space-12); }
+.notice-icon{ flex-shrink:0; }
+
+/* ── Hint Chips ── */
+.hint-chips{ display:flex; flex-wrap:wrap; gap:var(--space-8); margin-top:var(--space-10); }
+.hint-chip{ padding:5px 12px; background:var(--blue-50); color:var(--blue-600); border-radius:var(--radius-full); font-size:12px; font-weight:500; cursor:pointer; border:none; font-family:inherit; transition:background .12s; }
+.hint-chip:hover{ background:var(--blue-100); }
+
+/* ── Toast ── */
+.toast{ position:fixed; bottom:calc(80px + env(safe-area-inset-bottom)); left:50%; transform:translateX(-50%); background:var(--gray-900); color:white; padding:12px 20px; border-radius:var(--radius-full); font-size:14px; font-weight:500; z-index:9999; opacity:0; transition:opacity .2s; pointer-events:none; max-width:88vw; text-align:center; white-space:normal; }
+.toast.show{ opacity:1; }
+
+/* ── Loading ── */
+.loading-overlay{ position:fixed; inset:0; background:rgba(255,255,255,.92); display:none; flex-direction:column; align-items:center; justify-content:center; z-index:9998; gap:var(--space-16); }
+.loading-overlay.show{ display:flex; }
+.loading-spinner{ width:40px; height:40px; border:3px solid var(--gray-200); border-top-color:var(--blue-500); border-radius:50%; animation:spin .7s linear infinite; }
+.loading-text{ font-size:15px; font-weight:600; color:var(--gray-700); }
+.loading-sub{ font-size:13px; color:var(--gray-500); }
+
+/* ── PDF Parse Notice ── */
+.parse-notice{
+  margin-top:var(--space-12); padding:var(--space-12) var(--space-16);
+  background:var(--blue-50); border:1px solid var(--blue-100); border-radius:var(--radius-md);
+  font-size:13px; color:var(--blue-700); line-height:1.5;
+}
+
+/* ── Responsive ── */
+@media(min-width:768px){
+  body{ padding:24px; }
+  .app-shell{ border-radius:var(--radius-xl); box-shadow:var(--shadow-lg); min-height:calc(100vh - 48px); max-height:calc(100vh - 48px); overflow-y:auto; }
+  .bottom-bar{ border-radius:0 0 var(--radius-xl) var(--radius-xl); }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ SPLASH ══ -->
+<div id="splash">
+  <!-- 로고 심볼 -->
+  <div class="splash-icon">
+    <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- 데시벨 바 이퀄라이저 -->
+      <rect x="5"  y="32" width="6" height="13" rx="3" fill="white" opacity=".45"/>
+      <rect x="13" y="23" width="6" height="22" rx="3" fill="white" opacity=".65"/>
+      <rect x="21" y="13" width="6" height="32" rx="3" fill="white"/>
+      <rect x="29" y="20" width="6" height="25" rx="3" fill="white" opacity=".80"/>
+      <rect x="37" y="27" width="6" height="18" rx="3" fill="white" opacity=".55"/>
+      <!-- 상단 강조 닷 -->
+      <circle cx="24" cy="8" r="3.5" fill="#93C5FD" opacity=".9"/>
+    </svg>
+  </div>
+
+  <!-- 앱 이름 -->
+  <div class="splash-name">데시<em>벨</em></div>
+
+  <!-- 슬로건 -->
+  <div class="splash-slogan">
+    <span class="sl-pre">아무도 몰라주던 내</span>
+    <span class="sl-line2">
+      <span class="sl-quiet">조용한 경험</span>의 <span class="sl-bold">볼륨</span>을 <span class="sl-bold">키우다</span>
+    </span>
+  </div>
+</div>
+
+<div class="app-shell" id="appShell">
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-logo">
+      <div class="header-logo-icon">
+        <svg viewBox="0 0 44 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="6" y="28" width="5" height="10" rx="2.5" fill="white" opacity=".5"/>
+          <rect x="13" y="20" width="5" height="18" rx="2.5" fill="white" opacity=".7"/>
+          <rect x="20" y="12" width="5" height="26" rx="2.5" fill="white"/>
+          <rect x="27" y="18" width="5" height="20" rx="2.5" fill="white" opacity=".8"/>
+          <rect x="34" y="24" width="5" height="14" rx="2.5" fill="white" opacity=".6"/>
+        </svg>
+      </div>
+      <span class="header-logo-text">데시<span>벨</span></span>
+    </div>
+    <div style="font-size:13px;color:var(--gray-500);font-weight:500;" id="headerStep">경력기술서 만들기</div>
+  </header>
+  <div class="progress-bar-wrap">
+    <div class="progress-bar-fill" id="progressBar" style="width:0%"></div>
+  </div>
+
+  <!-- ══ SCREEN 0: 시작 ══ -->
+  <div class="screen active" id="screen-0">
+    <div class="section-wrap" style="flex:1;">
+      <div class="step-eyebrow">시작하기</div>
+      <div class="section-title">어떻게 시작할까요?</div>
+      <div class="section-desc">포트폴리오가 있으면 업로드하면 돼요.<br>없어도 괜찮아요, 직접 입력으로 시작할 수 있어요.</div>
+      <div class="card selected" id="card-upload" onclick="selectStart('upload')" style="cursor:pointer;">
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div style="flex-shrink:0;display:flex;align-items:center;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#fac)">
+<path d="M7 22C5.34315 22 4 20.6569 4 19V3C4 2.44772 4.44771 2 5 2H14.5858C14.851 2 15.1054 2.10536 15.2929 2.29289L19.7071 6.70711C19.8946 6.89464 20 7.149 20 7.41421V19C20 20.6569 18.6569 22 17 22H7Z" fill="#1CB0F6"/>
+<path d="M14 7V2H14.5858C14.851 2 15.1054 2.10536 15.2929 2.29289L19.7071 6.70711C19.8946 6.89464 20 7.149 20 7.41421V8H15C14.4477 8 14 7.55228 14 7Z" fill="#2B70C9"/>
+<path d="M12 13V17" stroke="#84D8FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M10 15H14" stroke="#DDF4FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<defs><clipPath id="fac"><rect width="24" height="24" fill="white"/></clipPath></defs>
+</svg></div>
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+              <div style="font-size:17px;font-weight:700;">포트폴리오 업로드</div>
+              <span style="padding:2px 8px;background:var(--blue-500);color:white;border-radius:var(--radius-full);font-size:11px;font-weight:700;">추천</span>
+            </div>
+            <div style="font-size:13px;color:var(--gray-600);line-height:1.6;">PDF를 올리면 AI가 내용을 읽고 경력기술서 초안을 만들어드려요.</div>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="card-manual" onclick="selectStart('manual')" style="cursor:pointer;margin-top:12px;">
+        <div style="display:flex;align-items:flex-start;gap:16px;">
+          <div style="flex-shrink:0;display:flex;align-items:center;"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#wrc)">
+<path d="M5 16L4 20L8 19L19.5858 7.41421C20.3668 6.63316 20.3668 5.36683 19.5858 4.58579L19.4142 4.41421C18.6332 3.63316 17.3668 3.63317 16.5858 4.41421L5 16Z" fill="#58CC02" stroke="#58CC02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M19.5858 4.58579L19.4142 4.41421C18.6332 3.63316 17.3668 3.63317 16.5858 4.41421L15 6L18 9L19.5858 7.41421C20.3668 6.63316 20.3668 5.36683 19.5858 4.58579Z" fill="#58A700" stroke="#58A700" stroke-width="2" stroke-linecap="round"/>
+<path d="M13 20H21" stroke="#58CC02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</g>
+<defs><clipPath id="wrc"><rect width="24" height="24" fill="white"/></clipPath></defs>
+</svg></div>
+          <div>
+            <div style="font-size:17px;font-weight:700;margin-bottom:6px;">직접 입력</div>
+            <div style="font-size:13px;color:var(--gray-600);line-height:1.6;">프로젝트 정보를 직접 입력하고 AI가 경력기술서로 완성해드려요.</div>
+          </div>
+        </div>
+      </div>
+      <div class="notice" style="margin-top:24px;">
+        <span class="notice-icon">🔒</span>
+        <span>입력한 정보와 업로드 파일은 경력기술서 생성에만 사용되고 이후 즉시 삭제돼요.</span>
+      </div>
+    </div>
+    <div class="bottom-bar">
+      <button class="btn btn-primary" onclick="goToStart()">다음</button>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 1A: 파일 업로드 ══ -->
+  <div class="screen" id="screen-1a">
+    <div class="section-wrap" style="flex:1;">
+      <div class="step-eyebrow">1 / 3 · 포트폴리오 업로드</div>
+      <div class="section-title">포트폴리오 파일을 올려주세요</div>
+      <div class="section-desc">PDF 파일을 지원해요 · 최대 20MB<br>AI가 내용을 읽고 자동으로 분석해드려요.</div>
+      <div class="upload-zone" id="uploadZone" onclick="triggerFileInput()"
+        ondragover="handleDragOver(event)" ondrop="handleDrop(event)" ondragleave="handleDragLeave(event)">
+        <div class="upload-icon">📄</div>
+        <div class="upload-zone-title">PDF를 여기에 올려주세요</div>
+        <div class="upload-zone-sub">클릭하거나 드래그해서 업로드</div>
+      </div>
+      <input type="file" id="fileInput" accept=".pdf" style="display:none;" onchange="handleFileSelect(event)">
+      <div id="fileChip" style="display:none;" class="file-chip">
+        <span class="file-chip-icon">📄</span>
+        <div>
+          <div class="file-chip-name" id="fileName">-</div>
+          <div class="file-chip-size" id="fileSize">-</div>
+        </div>
+        <button class="file-chip-remove" onclick="removeFile()">✕</button>
+      </div>
+      <div class="parse-notice">
+        💡 <strong>PDF.js로 텍스트를 직접 추출</strong>한 후 Claude AI가 프로젝트 정보를 구조화해요.<br>
+        이미지 스캔 PDF나 보안 잠금 PDF는 텍스트 추출이 어려울 수 있어요.
+      </div>
+    </div>
+    <div class="bottom-bar">
+      <div class="btn-row">
+        <button class="btn btn-secondary" style="flex:1;" onclick="goScreen(0)">이전</button>
+        <button class="btn btn-primary" style="flex:2;" onclick="startParsing()" id="parseBtn" disabled>파일 분석 시작</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 1B: 파싱 진행 ══ -->
+  <div class="screen" id="screen-1b">
+    <div class="section-wrap" style="flex:1;">
+      <div class="step-eyebrow">분석 중</div>
+      <div class="section-title">포트폴리오를 읽고 있어요</div>
+      <div class="section-desc">잠깐만요, AI가 내용을 분석하고 있어요.</div>
+      <div class="card" style="margin-top:8px;">
+        <div class="parse-step"><div class="parse-dot wait" id="pd1">·</div><div class="parse-label">PDF 텍스트 추출</div><div class="parse-status wait" id="ps1">대기 중</div></div>
+        <div class="parse-step"><div class="parse-dot wait" id="pd2">·</div><div class="parse-label">프로젝트 섹션 인식</div><div class="parse-status wait" id="ps2">대기 중</div></div>
+        <div class="parse-step"><div class="parse-dot wait" id="pd3">·</div><div class="parse-label">기간 · 역할 · 업무 분류</div><div class="parse-status wait" id="ps3">대기 중</div></div>
+        <div class="parse-step"><div class="parse-dot wait" id="pd4">·</div><div class="parse-label">정보 구조화 완료</div><div class="parse-status wait" id="ps4">대기 중</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 2: 프로젝트 정보 ══ -->
+  <div class="screen" id="screen-2">
+    <div class="section-wrap" style="flex:1;">
+      <div class="step-eyebrow" id="s2eyebrow">2 / 3 · 프로젝트 정보</div>
+      <div class="section-title" id="s2title">프로젝트 정보를 확인해주세요</div>
+      <div class="section-desc" id="s2desc">AI가 채운 내용을 확인하고 필요하면 수정해주세요.</div>
+      <div class="form-group">
+        <label class="form-label">프로젝트명</label>
+        <input class="form-input" id="projectName" type="text" placeholder="예) 고객센터 AI 상담 시스템 구축" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">소속 회사 / 조직</label>
+        <input class="form-input" id="companyName" type="text" placeholder="예) 회사명 / 프리랜서" autocomplete="off">
+      </div>
+      <div class="form-group">
+        <label class="form-label">프로젝트 기간</label>
+        <div class="form-row">
+          <select class="form-select" id="startDate"></select>
+          <select class="form-select" id="endDate"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">직무 포지션</label>
+        <select class="form-select" id="position" onchange="onPositionChange(this.value)">
+          <option value="">선택해주세요</option>
+          <option value="기획자/PM">기획자 / PM</option>
+          <option value="UI/UX 디자이너">UI/UX 디자이너</option>
+          <option value="프론트엔드 개발자">프론트엔드 개발자</option>
+          <option value="백엔드 개발자">백엔드 개발자</option>
+          <option value="풀스택 개발자">풀스택 개발자</option>
+          <option value="데이터 분석가">데이터 분석가</option>
+          <option value="마케터">마케터</option>
+          <option value="기타">기타</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">팀 규모</label>
+        <select class="form-select" id="teamSize">
+          <option value="1인 (단독)">1인 (단독)</option>
+          <option value="2~5인">2~5인</option>
+          <option value="6~10인" selected>6~10인</option>
+          <option value="10~30인">10~30인</option>
+          <option value="30인 이상">30인 이상</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">나의 기여도</label>
+        <div class="slider-row">
+          <input type="range" class="toss-slider" id="contribution" min="10" max="100" step="5" value="70" oninput="updateSlider(this.value)">
+          <div class="slider-val" id="sliderVal">70%</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">사용 기술 / 툴</label>
+        <div class="tag-group" id="toolTags"></div>
+        <input class="form-input" id="customTool" type="text" placeholder="직접 입력 후 Enter" style="margin-top:10px;" onkeydown="addCustomTag(event)">
+      </div>
+      <hr class="divider">
+      <div class="form-group">
+        <label class="form-label">업무 내용 <span style="color:var(--gray-500);font-weight:400;font-size:13px;">— 대충 써도 돼요 👌</span></label>
+        <textarea class="form-textarea" id="workContent" placeholder="했던 업무를 간단하게 적어주세요." oninput="onWorkContentChange()"></textarea>
+        <div class="interview-bubble-wrap" id="interviewBubbles" style="display:none;"></div>
+        <div class="hint-chips">
+          <button class="hint-chip" onclick="addHint('가장 어려웠던 점: ')">어떤 게 힘들었나요?</button>
+          <button class="hint-chip" onclick="addHint('팀에서 내 역할: ')">팀 내 내 역할은?</button>
+          <button class="hint-chip" onclick="addHint('주요 산출물: ')">어떤 걸 만들었나요?</button>
+        </div>
+      </div>
+    </div>
+    <div class="bottom-bar">
+      <div class="btn-row">
+        <button class="btn btn-secondary" style="flex:1;" id="s2BackBtn" onclick="goScreen(0)">이전</button>
+        <button class="btn btn-primary" style="flex:2;" onclick="goToMetrics()">다음</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 3: 수치 제안 ══ -->
+  <div class="screen" id="screen-3">
+    <div class="section-wrap" style="flex:1;">
+      <div class="step-eyebrow">3 / 3 · 수치 제안</div>
+      <div class="section-title">이런 수치는 어떨까요?</div>
+      <div class="section-desc">작성 내용을 바탕으로 정량 수치 후보를 제안해드려요.<br>선택하거나 직접 수정할 수 있어요.</div>
+      <div id="metricsContainer"></div>
+      <div class="warn-banner">
+        <span class="warn-icon">⚠️</span>
+        <span class="warn-text">제안된 수치는 AI 추정값이에요. 실제 성과와 다를 수 있으니 면접 전 근거를 정리해두세요.</span>
+      </div>
+    </div>
+    <div class="bottom-bar">
+      <div class="btn-row">
+        <button class="btn btn-secondary" style="flex:1;" onclick="goScreen(2)">이전</button>
+        <button class="btn btn-primary" style="flex:2;" onclick="generateResume()">경력기술서 생성하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SCREEN 4: 결과 ══ -->
+  <div class="screen" id="screen-4">
+    <div class="section-wrap" style="flex:1;">
+      <div class="step-eyebrow">완성 🎉</div>
+      <div class="section-title">경력기술서가 완성됐어요!</div>
+      <div class="compare-toggle-row">
+        <div>
+          <div class="compare-toggle-label">원본과 비교하기</div>
+          <div class="compare-toggle-sub">AI가 어떻게 다듬었는지 확인해요</div>
+        </div>
+        <label class="toss-switch">
+          <input type="checkbox" id="compareToggle" onchange="onCompareToggle(this.checked)">
+          <div class="toss-switch-track"></div>
+          <div class="toss-switch-thumb"></div>
+        </label>
+      </div>
+      <div class="tone-row">
+        <button class="tone-btn active" onclick="changeTone(this,'전문적')">전문적</button>
+        <button class="tone-btn" onclick="changeTone(this,'간결하게')">간결하게</button>
+        <button class="tone-btn" onclick="changeTone(this,'자세하게')">자세하게</button>
+      </div>
+      <div id="resultContainer"></div>
+      <div class="notice" style="margin-top:4px;">
+        <span class="notice-icon">💡</span>
+        <span>수치 옆 <strong>(추정)</strong> 표시는 AI가 추정한 값이에요. 실제 수치로 교체하면 더 좋아요.</span>
+      </div>
+    </div>
+    <div class="bottom-bar">
+      <div class="btn-row">
+        <button class="btn btn-secondary" style="flex:1;" onclick="regenerate()">🔄 재생성</button>
+        <button class="btn btn-primary" style="flex:2;" onclick="copyResult()">📋 텍스트 복사</button>
+      </div>
+      <button class="btn-text" onclick="goHome()" style="margin-top:8px;">처음으로 돌아가기</button>
+    </div>
+  </div>
+
+</div><!-- /app-shell -->
+
+<div class="loading-overlay" id="loadingOverlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text" id="loadingText">AI가 분석하고 있어요</div>
+  <div class="loading-sub" id="loadingSub">잠깐만 기다려주세요...</div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════
+   PDF.js worker 설정
+═══════════════════════════════════ */
+if (typeof pdfjsLib !== 'undefined') {
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+}
+
+/* ═══════════════════════════════════
+   STATE
+═══════════════════════════════════ */
+const state = {
+  startMode: 'upload',
+  currentScreen: 0,
+  uploadedFile: null,
+  projectData: {},
+  selectedMetrics: {},
+  generatedResume: null,
+  currentTone: '전문적',
+  metricsData: [],
+  compareMode: false,
+};
+
+/* ═══════════════════════════════════
+   ROLE CONFIG
+═══════════════════════════════════ */
+const ROLE_CONFIG = {
+  '기획자/PM': {
+    tools: ['Figma','Jira','Confluence','Amplitude','Slack','Notion','Miro','Google Analytics'],
+    placeholder: '화면 기획서 작성, 개발팀/디자인팀과 일정 조율, A/B 테스트 설계 등 간단히 적어주세요.',
+    questions: ['개발팀이나 디자인팀과 협업하면서 가장 신경 썼던 문서는 무엇인가요?','사용자 불편을 발견하고 기획에 반영한 경험이 있으신가요?','일정이 촉박했을 때 어떻게 우선순위를 정리하셨나요?'],
+  },
+  'UI/UX 디자이너': {
+    tools: ['Figma','ProtoPie','Illustrator','Photoshop','Zeplin','After Effects','Framer'],
+    placeholder: '와이어프레임 설계, 디자인 시스템 구축, 사용자 인터뷰 진행 등 간단히 적어주세요.',
+    questions: ['기존 디자인 대비 사용성을 높이기 위해 어떤 UI 요소를 개선하셨나요?','디자인 결정을 내릴 때 사용자 리서치 결과를 어떻게 활용하셨나요?','디자인 시스템이나 컴포넌트 가이드를 만든 경험이 있으신가요?'],
+  },
+  '프론트엔드 개발자': {
+    tools: ['React','Vue','TypeScript','Next.js','Tailwind','Git','Webpack','Storybook'],
+    placeholder: '컴포넌트 설계, 렌더링 최적화, API 연동, 반응형 UI 구현 등 간단히 적어주세요.',
+    questions: ['성능 최적화를 위해 어떤 기법을 적용하셨나요?','재사용 가능한 컴포넌트나 공통 모듈을 설계한 경험이 있으신가요?','크로스 브라우저/기기 대응에서 가장 힘들었던 부분은 무엇인가요?'],
+  },
+  '백엔드 개발자': {
+    tools: ['Spring','Node.js','Python','MySQL','PostgreSQL','Redis','AWS','Docker','Kafka'],
+    placeholder: 'API 설계, DB 마이그레이션, 성능 튜닝, 인프라 구성 등 간단히 적어주세요.',
+    questions: ['트래픽 증가 상황에서 서버 성능을 어떻게 개선하셨나요?','데이터베이스 쿼리 최적화나 인덱스 설계를 한 경험이 있으신가요?','API 설계 시 가장 중요하게 고려한 기준은 무엇인가요?'],
+  },
+  '풀스택 개발자': {
+    tools: ['React','Node.js','TypeScript','AWS','MySQL','Docker','Git','Next.js'],
+    placeholder: '프론트엔드/백엔드 개발, 배포 자동화, DB 설계 등 간단히 적어주세요.',
+    questions: ['혼자 전체 스택을 담당하면서 가장 병목이 됐던 부분은 무엇인가요?','서비스 런칭을 위해 어떤 배포 파이프라인을 구성하셨나요?'],
+  },
+  '데이터 분석가': {
+    tools: ['Python','SQL','Tableau','Power BI','R','Spark','BigQuery','Excel'],
+    placeholder: '데이터 수집/분석, 대시보드 구축, A/B 테스트 설계, 리포팅 등 간단히 적어주세요.',
+    questions: ['분석 결과가 실제 비즈니스 의사결정에 영향을 준 사례가 있으신가요?','데이터 품질 문제를 발견하고 해결한 경험이 있으신가요?'],
+  },
+  '마케터': {
+    tools: ['Google Analytics','Meta Ads','Notion','Slack','HubSpot','Figma','Amplitude'],
+    placeholder: '캠페인 기획/실행, 성과 분석, 콘텐츠 제작, 채널 운영 등 간단히 적어주세요.',
+    questions: ['성과가 가장 좋았던 캠페인에서 어떤 전략이 주효했나요?','예산 한계 안에서 ROI를 높이기 위해 어떤 실험을 하셨나요?'],
+  },
+  '기타': {
+    tools: ['Excel','Notion','Slack','Google Workspace','Zoom'],
+    placeholder: '담당했던 주요 업무를 간단하게 적어주세요.',
+    questions: ['이 프로젝트에서 가장 기여한 부분은 무엇인가요?','팀 또는 조직에서 어떤 역할을 맡으셨나요?'],
+  },
+};
+const DEFAULT_TOOLS = ['Figma','Jira','Notion','Slack','Confluence','Zeplin','Excel','SQL','Python','React','Vue','Spring','AWS'];
+
+/* ═══════════════════════════════════
+   SPLASH
+═══════════════════════════════════ */
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    splash.classList.add('hide');
+    setTimeout(() => { splash.style.display = 'none'; }, 650);
+  }, 2500);
+});
+
+/* ═══════════════════════════════════
+   INIT
+═══════════════════════════════════ */
+function init() {
+  buildDateSelects();
+  renderToolTags(DEFAULT_TOOLS);
+  updateProgress(5);
+}
+
+/* ── 날짜 셀렉트: 최신 년월이 상단 ── */
+function buildDateSelects() {
+  const months = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+  const now  = new Date();
+  const curY = now.getFullYear();
+  const curM = String(now.getMonth() + 1).padStart(2,'0');
+  const defStartY = (now.getMonth() === 0) ? curY - 1 : curY;
+  const defStartM = (now.getMonth() === 0) ? '12' : String(now.getMonth()).padStart(2,'0');
+
+  // 연도: 최신(curY+1)부터 2015까지 내림차순
+  const years = [];
+  for (let y = curY + 1; y >= 2015; y--) years.push(y);
+
+  ['startDate','endDate'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = '';
+    // 최신 년월이 상단 → 연도 내림차순, 월 내림차순
+    years.forEach(y => {
+      // 월도 내림차순(12→1)으로 정렬
+      for (let mi = months.length - 1; mi >= 0; mi--) {
+        const m = months[mi];
+        // startDate는 미래 제외
+        if (id === 'startDate' && (y > curY || (y === curY && m > curM))) continue;
+        const opt = document.createElement('option');
+        opt.value = `${y}.${m}`;
+        opt.textContent = `${y}년 ${m}월`;
+        if (id === 'startDate' && y === defStartY && m === defStartM) opt.selected = true;
+        if (id === 'endDate'   && y === curY && m === curM) opt.selected = true;
+        sel.appendChild(opt);
+      }
+    });
+  });
+}
+
+/* ═══════════════════════════════════
+   PDF 실제 분석
+═══════════════════════════════════ */
+async function extractPdfText(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const typedArray = new Uint8Array(e.target.result);
+        const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+        let fullText = '';
+        for (let i = 1; i <= Math.min(pdf.numPages, 30); i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const pageText = content.items.map(item => item.str).join(' ');
+          fullText += `\n[페이지 ${i}]\n` + pageText;
+        }
+        resolve(fullText.trim());
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error('파일 읽기 실패'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function startParsing() {
+  goScreenStr('1b');
+
+  // Step 1: PDF 텍스트 추출
+  setParseStep('pd1','ps1','loading');
+  let pdfText = '';
+  try {
+    pdfText = await extractPdfText(state.uploadedFile);
+    if (!pdfText || pdfText.length < 50) {
+      throw new Error('텍스트를 충분히 추출하지 못했어요.');
+    }
+    setParseStep('pd1','ps1','done');
+  } catch (err) {
+    setParseStep('pd1','ps1','done');
+    // 텍스트 추출 실패 → 직접 입력 안내
+    await sleep(500);
+    goScreen(2);
+    showToast('PDF에서 텍스트를 추출하지 못했어요. 직접 입력해주세요.');
+    setupManualMode();
+    return;
+  }
+
+  // Step 2~3: Claude API로 구조화
+  setParseStep('pd2','ps2','loading');
+  await sleep(400);
+  setParseStep('pd2','ps2','done');
+  setParseStep('pd3','ps3','loading');
+
+  try {
+    const prompt = buildParsePrompt(pdfText);
+    const json   = await callApi(prompt, 'parse');
+    const parsed = parseJsonFromResponse(json);
+    setParseStep('pd3','ps3','done');
+
+    // Step 4: 구조화 완료
+    setParseStep('pd4','ps4','loading');
+    await sleep(400);
+    setParseStep('pd4','ps4','done');
+    await sleep(300);
+
+    // 폼 자동 세팅
+    applyParsedData(parsed);
+    goScreen(2);
+  } catch (err) {
+    setParseStep('pd3','ps3','done');
+    setParseStep('pd4','ps4','done');
+    await sleep(300);
+    goScreen(2);
+    showToast('AI 분석 중 오류가 발생했어요. 내용을 직접 수정해주세요.');
+    setupManualMode();
+  }
+}
+
+function buildParsePrompt(pdfText) {
+  // 토큰 절약: 앞 6000자만 사용
+  const excerpt = pdfText.slice(0, 6000);
+  return `아래는 포트폴리오 PDF에서 추출한 텍스트입니다.
+이 텍스트를 분석해서 가장 대표적인 프로젝트 1개의 정보를 JSON으로 추출해주세요.
+텍스트에서 명확하게 파악되는 정보만 추출하고, 불확실한 항목은 빈 문자열로 두세요.
+
+[추출 텍스트]
+${excerpt}
+
+다음 JSON 형식으로만 응답하세요 (코드블록 없이 순수 JSON):
+{
+  "projectName": "프로젝트명 (없으면 빈 문자열)",
+  "companyName": "회사/조직명 (없으면 빈 문자열)",
+  "startDate": "YYYY.MM 형식 시작일 (없으면 빈 문자열)",
+  "endDate": "YYYY.MM 형식 종료일 (없으면 빈 문자열)",
+  "position": "직무 포지션 (기획자/PM, UI/UX 디자이너, 프론트엔드 개발자, 백엔드 개발자, 풀스택 개발자, 데이터 분석가, 마케터, 기타 중 하나)",
+  "tools": ["툴1","툴2"],
+  "workContent": "주요 업무 내용 요약 (bullet point 형식, 200자 이내)"
+}`;
+}
+
+function applyParsedData(data) {
+  if (data.projectName) document.getElementById('projectName').value = data.projectName;
+  if (data.companyName)  document.getElementById('companyName').value  = data.companyName;
+  if (data.position && document.querySelector(`#position option[value="${data.position}"]`)) {
+    document.getElementById('position').value = data.position;
+    onPositionChange(data.position);
+  }
+  if (data.workContent)  document.getElementById('workContent').value  = data.workContent;
+
+  // 날짜 설정
+  if (data.startDate) setDateSelect('startDate', data.startDate);
+  if (data.endDate)   setDateSelect('endDate',   data.endDate);
+
+  // 툴 태그 선택
+  if (data.tools && Array.isArray(data.tools)) {
+    setTimeout(() => {
+      document.querySelectorAll('#toolTags .tag').forEach(el => {
+        if (data.tools.some(t => t.toLowerCase() === el.textContent.trim().toLowerCase())) {
+          el.classList.add('selected');
+        }
+      });
+    }, 200);
+  }
+
+  document.getElementById('s2eyebrow').textContent = '2 / 3 · 파싱 결과 확인';
+  document.getElementById('s2title').textContent   = 'AI가 내용을 채웠어요,\n확인해주세요';
+  document.getElementById('s2desc').textContent    = '포트폴리오에서 읽어온 내용이에요. 다르면 수정해주세요.';
+  document.getElementById('s2BackBtn').setAttribute('onclick', "goScreenStr('1a')");
+}
+
+function setDateSelect(id, value) {
+  // value: "2023.03" 형태
+  const sel = document.getElementById(id);
+  for (const opt of sel.options) {
+    if (opt.value === value) { opt.selected = true; return; }
+  }
+}
+
+function setupManualMode() {
+  document.getElementById('s2eyebrow').textContent = '2 / 3 · 프로젝트 정보';
+  document.getElementById('s2title').textContent   = '프로젝트 정보를\n입력해주세요';
+  document.getElementById('s2desc').textContent    = '했던 프로젝트를 간단하게 입력하면 AI가 완성해드려요.';
+  document.getElementById('s2BackBtn').setAttribute('onclick', "goScreenStr('1a')");
+}
+
+/* ═══════════════════════════════════
+   UX 1: 직무별 다이내믹 폼
+═══════════════════════════════════ */
+function onPositionChange(role) {
+  const cfg = ROLE_CONFIG[role];
+  if (!cfg) { renderToolTags(DEFAULT_TOOLS); return; }
+  const wrap = document.getElementById('toolTags');
+  wrap.style.opacity = '0'; wrap.style.transform = 'translateY(4px)';
+  setTimeout(() => {
+    renderToolTags(cfg.tools);
+    wrap.style.transition = 'opacity .2s,transform .2s';
+    wrap.style.opacity = '1'; wrap.style.transform = 'translateY(0)';
+  }, 150);
+  document.getElementById('workContent').placeholder = cfg.placeholder;
+  onWorkContentChange();
+}
+
+function renderToolTags(tools) {
+  const wrap = document.getElementById('toolTags');
+  wrap.innerHTML = '';
+  tools.forEach(t => {
+    const tag = document.createElement('span');
+    tag.className = 'tag';
+    tag.textContent = t;
+    tag.onclick = function() { this.classList.toggle('selected'); };
+    wrap.appendChild(tag);
+  });
+}
+
+/* ═══════════════════════════════════
+   UX 2: 말풍선 인터뷰
+═══════════════════════════════════ */
+let bubbleTimer = null;
+function onWorkContentChange() {
+  const val  = document.getElementById('workContent').value;
+  const role = document.getElementById('position').value;
+  const wrap = document.getElementById('interviewBubbles');
+  clearTimeout(bubbleTimer);
+  if (val.length >= 20 || !role || !ROLE_CONFIG[role]) { wrap.style.display = 'none'; return; }
+  bubbleTimer = setTimeout(() => {
+    const qs = ROLE_CONFIG[role].questions;
+    wrap.innerHTML = '';
+    qs.forEach(q => {
+      const b = document.createElement('div');
+      b.className = 'interview-bubble';
+      b.innerHTML = `<span class="bubble-icon">💬</span><span>${q}</span>`;
+      b.onclick = () => prefillFromBubble(q);
+      wrap.appendChild(b);
+    });
+    wrap.style.display = 'flex';
+  }, 600);
+}
+function prefillFromBubble(q) {
+  const ta = document.getElementById('workContent');
+  ta.value = ta.value ? ta.value + '\n' + q : q;
+  ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length);
+  document.getElementById('interviewBubbles').style.display = 'none';
+}
+
+/* ═══════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════ */
+const SCREEN_META = {
+  0:    { progress:5,   label:'시작 방법 선택' },
+  '1a': { progress:20,  label:'포트폴리오 업로드' },
+  '1b': { progress:35,  label:'파일 분석 중...' },
+  2:    { progress:55,  label:'프로젝트 정보' },
+  3:    { progress:75,  label:'AI 수치 제안' },
+  4:    { progress:100, label:'완성 🎉' },
+};
+function goScreen(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + n);
+  if (el) el.classList.add('active');
+  state.currentScreen = n;
+  document.getElementById('appShell').scrollTop = 0;
+  const meta = SCREEN_META[String(n)] || SCREEN_META[0];
+  updateProgress(meta.progress);
+  document.getElementById('headerStep').textContent = meta.label;
+}
+function goScreenStr(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const el = document.getElementById('screen-' + id);
+  if (el) el.classList.add('active');
+  document.getElementById('appShell').scrollTop = 0;
+  const meta = SCREEN_META[id] || SCREEN_META[0];
+  updateProgress(meta.progress);
+  document.getElementById('headerStep').textContent = meta.label;
+}
+function updateProgress(pct) { document.getElementById('progressBar').style.width = pct + '%'; }
+
+function goHome() {
+  // 상태 초기화
+  state.projectData = {}; state.selectedMetrics = {}; state.generatedResume = null;
+  state.compareMode = false; state.uploadedFile = null;
+  // 폼 초기화
+  ['projectName','companyName','workContent'].forEach(id => { document.getElementById(id).value = ''; });
+  document.getElementById('position').value = '';
+  document.getElementById('contribution').value = 70;
+  updateSlider(70);
+  removeFile();
+  renderToolTags(DEFAULT_TOOLS);
+  document.getElementById('compareToggle').checked = false;
+  document.getElementById('resultContainer').innerHTML = '';
+  // 스텝 텍스트 초기화
+  document.getElementById('s2eyebrow').textContent = '2 / 3 · 프로젝트 정보';
+  document.getElementById('s2title').textContent = '프로젝트 정보를 확인해주세요';
+  document.getElementById('s2desc').textContent = 'AI가 채운 내용을 확인하고 필요하면 수정해주세요.';
+  goScreen(0);
+}
+
+/* ═══════════════════════════════════
+   SCREEN 0
+═══════════════════════════════════ */
+function selectStart(mode) {
+  state.startMode = mode;
+  document.getElementById('card-upload').classList.toggle('selected', mode === 'upload');
+  document.getElementById('card-manual').classList.toggle('selected', mode === 'manual');
+}
+function goToStart() {
+  if (state.startMode === 'upload') {
+    goScreenStr('1a');
+  } else {
+    setupManualMode();
+    document.getElementById('s2eyebrow').textContent = '1 / 2 · 프로젝트 정보';
+    document.getElementById('s2title').textContent = '프로젝트 정보를\n입력해주세요';
+    document.getElementById('s2desc').textContent = '했던 프로젝트를 간단하게 입력하면 AI가 완성해드려요.';
+    document.getElementById('s2BackBtn').setAttribute('onclick', 'goScreen(0)');
+    goScreen(2);
+  }
+}
+
+/* ═══════════════════════════════════
+   SCREEN 1A: 파일 업로드
+═══════════════════════════════════ */
+function triggerFileInput() { document.getElementById('fileInput').click(); }
+function handleDragOver(e) { e.preventDefault(); document.getElementById('uploadZone').classList.add('drag-over'); }
+function handleDragLeave()  { document.getElementById('uploadZone').classList.remove('drag-over'); }
+function handleDrop(e) {
+  e.preventDefault(); document.getElementById('uploadZone').classList.remove('drag-over');
+  const f = e.dataTransfer.files[0]; if (f) processFile(f);
+}
+function handleFileSelect(e) { if (e.target.files[0]) processFile(e.target.files[0]); }
+function processFile(f) {
+  if (!/\.pdf$/i.test(f.name)) { showToast('PDF 파일만 올릴 수 있어요'); return; }
+  if (f.size > 20 * 1024 * 1024) { showToast('20MB 이하 파일만 올릴 수 있어요'); return; }
+  state.uploadedFile = f;
+  document.getElementById('fileName').textContent = f.name;
+  document.getElementById('fileSize').textContent = (f.size/1024/1024).toFixed(1) + 'MB';
+  document.getElementById('fileChip').style.display = 'flex';
+  document.getElementById('parseBtn').disabled = false;
+}
+function removeFile() {
+  state.uploadedFile = null;
+  document.getElementById('fileChip').style.display = 'none';
+  document.getElementById('parseBtn').disabled = true;
+  document.getElementById('fileInput').value = '';
+}
+
+function setParseStep(dotId, statusId, st) {
+  const dot = document.getElementById(dotId), status = document.getElementById(statusId);
+  dot.className = 'parse-dot ' + st; status.className = 'parse-status ' + st;
+  if (st === 'loading') { dot.innerHTML = '<span class="spin">⟳</span>'; status.textContent = '분석 중...'; }
+  else if (st === 'done') { dot.textContent = '✓'; status.textContent = '완료'; }
+  else { dot.textContent = '·'; status.textContent = '대기 중'; }
+}
+
+/* ═══════════════════════════════════
+   FORM CONTROLS
+═══════════════════════════════════ */
+function updateSlider(val) {
+  document.getElementById('sliderVal').textContent = val + '%';
+  const pct = ((val - 10) / 90) * 100;
+  document.getElementById('contribution').style.background =
+    `linear-gradient(to right,var(--blue-500) ${pct}%,var(--gray-200) ${pct}%)`;
+}
+function addCustomTag(e) {
+  if (e.key !== 'Enter') return;
+  const val = e.target.value.trim(); if (!val) return;
+  const tag = document.createElement('span');
+  tag.className = 'tag selected'; tag.textContent = val;
+  tag.onclick = function() { this.classList.toggle('selected'); };
+  document.getElementById('toolTags').appendChild(tag);
+  e.target.value = '';
+}
+function addHint(text) {
+  const ta = document.getElementById('workContent');
+  ta.value += (ta.value ? '\n' : '') + text; ta.focus();
+}
+function getFormData() {
+  const tools = [...document.querySelectorAll('#toolTags .tag.selected')].map(t => t.textContent.trim());
+  return {
+    projectName:  document.getElementById('projectName').value  || '프로젝트명 미입력',
+    companyName:  document.getElementById('companyName').value  || '',
+    startDate:    document.getElementById('startDate').value,
+    endDate:      document.getElementById('endDate').value,
+    position:     document.getElementById('position').value     || '포지션 미입력',
+    teamSize:     document.getElementById('teamSize').value,
+    contribution: document.getElementById('contribution').value,
+    tools:        tools.join(', '),
+    workContent:  document.getElementById('workContent').value  || '',
+  };
+}
+
+/* ═══════════════════════════════════
+   API 공통 호출
+═══════════════════════════════════ */
+async function callApi(prompt, type) {
+  const res = await fetch('/api/anthropic', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({ prompt, type }),
+  });
+  if (res.status === 429) {
+    const data = await res.json().catch(() => ({}));
+    throw Object.assign(new Error(data.message || 'AI 사용량이 폭주하여 일시적으로 제한되었습니다. 잠시 후 시도해주세요.'), { code:'exceeded_limit' });
+  }
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.message || `서버 오류 (${res.status})`);
+  }
+  return res.json();
+}
+function parseJsonFromResponse(json) {
+  const text = (json.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('응답에서 JSON을 찾을 수 없어요.');
+  return JSON.parse(match[0]);
+}
+
+/* ═══════════════════════════════════
+   SCREEN 3: 수치 제안
+═══════════════════════════════════ */
+async function goToMetrics() {
+  const data = getFormData();
+  if (!data.workContent.trim()) { showToast('업무 내용을 입력해주세요'); return; }
+  if (!data.position || data.position === '포지션 미입력') { showToast('직무 포지션을 선택해주세요'); return; }
+  state.projectData = data;
+  showLoading('수치를 분석하고 있어요','잠깐만 기다려주세요...');
+  try {
+    const json   = await callApi(buildMetricsPrompt(data), 'metrics');
+    const parsed = parseJsonFromResponse(json);
+    if (!parsed.metrics || !Array.isArray(parsed.metrics)) throw new Error('metrics 배열 없음');
+    state.metricsData = parsed.metrics;
+    renderMetrics(parsed.metrics);
+    goScreen(3);
+  } catch(e) {
+    console.error('[goToMetrics]', e);
+    showToast(e.message || '분석 중 오류가 발생했어요. 다시 시도해주세요.');
+  } finally { hideLoading(); }
+}
+
+function buildMetricsPrompt(data) {
+  return `당신은 경력기술서 전문가입니다.
+아래 프로젝트 정보를 분석해서 경력기술서에 쓸 수 있는 정량 수치를 JSON으로만 응답해주세요.
+
+프로젝트: ${data.projectName}
+직무: ${data.position}
+기간: ${data.startDate} ~ ${data.endDate}
+팀 규모: ${data.teamSize}
+기여도: ${data.contribution}%
+업무 내용: ${data.workContent}
+
+다음 JSON 형식으로만 응답하세요 (코드블록 없이 순수 JSON):
+{"metrics":[{"id":"m1","sentence":"업무 설명 문장(수치 제외,60자 이내)","options":[{"label":"보수적 수치 표현","basis":"추정 근거"},{"label":"중간 수치 표현","basis":"추정 근거"},{"label":"적극적 수치 표현","basis":"추정 근거"}]}]}
+총 3~4개 항목 작성.`;
+}
+
+function renderMetrics(metrics) {
+  const container = document.getElementById('metricsContainer');
+  container.innerHTML = ''; state.selectedMetrics = {};
+  metrics.forEach((m, mi) => {
+    state.selectedMetrics[m.id] = m.options[0]?.label || '';
+    const card = document.createElement('div');
+    card.className = 'metric-card';
+    card.innerHTML = `
+      <div class="metric-header">
+        <span class="metric-header-icon">📊</span>
+        <div><div class="metric-header-title">항목 ${mi+1}</div><div class="metric-header-sub">3가지 수치 중 하나를 선택하세요</div></div>
+      </div>
+      <div class="metric-sentence">${escHtml(m.sentence)}</div>
+      <div class="metric-options" id="mopts-${m.id}">
+        ${m.options.map((opt,oi)=>`
+          <button class="metric-opt ${oi===0?'selected':''}" data-metric-id="${m.id}" data-label="${escAttr(opt.label)}">
+            <div class="metric-opt-radio"></div>
+            <div><div class="metric-opt-text">${escHtml(opt.label)}</div><div class="metric-basis">💡 ${escHtml(opt.basis)}</div></div>
+          </button>`).join('')}
+      </div>${mi<metrics.length-1?'<div class="metric-divider"></div>':''}`;
+    container.appendChild(card);
+  });
+  container.addEventListener('click', e => {
+    const btn = e.target.closest('.metric-opt'); if (!btn) return;
+    state.selectedMetrics[btn.dataset.metricId] = btn.dataset.label;
+    btn.closest('.metric-options').querySelectorAll('.metric-opt').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+  });
+}
+
+/* ═══════════════════════════════════
+   SCREEN 4: 경력기술서 생성
+═══════════════════════════════════ */
+async function generateResume() {
+  showLoading('경력기술서를 작성하고 있어요','멋진 문장으로 다듬고 있어요 ✍️');
+  try {
+    const json   = await callApi(buildResumePrompt(state.projectData, state.selectedMetrics, state.currentTone), 'resume');
+    const resume = parseJsonFromResponse(json);
+    state.generatedResume = resume;
+    renderResult(resume);
+    goScreen(4);
+    document.getElementById('compareToggle').checked = false; state.compareMode = false;
+  } catch(e) {
+    console.error('[generateResume]', e);
+    showToast(e.message || '생성에 실패했어요. 다시 시도해주세요.');
+  } finally { hideLoading(); }
+}
+
+function buildResumePrompt(data, metrics, tone) {
+  const ml = Object.values(metrics).filter(Boolean).join('\n- ');
+  const tg = {'전문적':'전문적이고 성과 중심적인 어투, 동사형 마무리.','간결하게':'짧고 핵심만, 군더더기 없이.','자세하게':'상세하고 맥락 풍부하게, 과정과 결과 충분히.'};
+  return `당신은 10년 경력의 경력기술서 전문 작가입니다.
+[프로젝트] ${data.projectName} | ${data.companyName} | ${data.startDate}~${data.endDate} | ${data.position} | ${data.teamSize} | 기여도${data.contribution}% | 툴:${data.tools}
+[업무내용] ${data.workContent}
+[선택수치] - ${ml}
+[톤] ${tg[tone]||tg['전문적']}
+다음 JSON으로만 응답 (코드블록 없이):
+{"title":"","period":"","role":"","contribution":"","teamSize":"","tools":[],"tasks":["동사형마무리 3~5개"],"achievements":["수치포함 2~4개, 추정치는(추정)표시"]}`;
+}
+
+function renderResult(resume) {
+  const container = document.getElementById('resultContainer');
+  const toolTags  = (resume.tools||[]).map(t=>`<span class="result-tag">${escHtml(t)}</span>`).join('');
+  const taskItems = (resume.tasks||[]).map(t=>`<div class="result-item"><span class="result-bullet">•</span><span class="result-text">${highlightNumbers(escHtml(t))}</span></div>`).join('');
+  const achItems  = (resume.achievements||[]).map(a=>`<div class="result-item"><span class="result-bullet">•</span><span class="result-text">${highlightNumbers(escHtml(a))}</span></div>`).join('');
+  container.innerHTML = `
+    <div class="result-card" id="mainResultCard">
+      <div class="result-card-header">
+        <div class="result-card-title">${escHtml(resume.title||state.projectData.projectName)}</div>
+        <div class="result-card-meta">${escHtml(resume.period||'')} · ${escHtml(resume.role||'')} · 기여도 ${escHtml(String(resume.contribution||state.projectData.contribution))}% · ${escHtml(resume.teamSize||state.projectData.teamSize)}</div>
+      </div>
+      <div class="result-card-body">
+        <div style="margin-bottom:16px;">${toolTags}</div>
+        <div class="result-section"><div class="result-section-label">담당 업무</div>${taskItems}</div>
+        <div class="result-section"><div class="result-section-label">성과</div>${achItems}</div>
+        <div class="before-box" id="beforeBox">
+          <div class="before-box-label">BEFORE · 원본 입력</div>
+          <div class="before-box-text">${escHtml(state.projectData.workContent||'')}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* UX 3: Before/After */
+function onCompareToggle(checked) {
+  state.compareMode = checked;
+  const bb = document.getElementById('beforeBox'); if (bb) bb.classList.toggle('show', checked);
+  document.querySelectorAll('.result-number').forEach(el => el.classList.toggle('hl-num', checked));
+  const tools = (state.generatedResume?.tools||[]).map(t=>t.toLowerCase());
+  document.querySelectorAll('.result-text').forEach(el => {
+    if (!checked) { el.innerHTML = el.innerHTML.replace(/<span class="hl-key">(.*?)<\/span>/g,'$1'); return; }
+    tools.forEach(t => { const re=new RegExp(`(${t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'); el.innerHTML=el.innerHTML.replace(re,'<span class="hl-key">$1</span>'); });
+  });
+}
+function highlightNumbers(text) {
+  return text.replace(/(\d+(?:\.\d+)?(?:%|개|명|건|배|만|억|시간|일|주|개월|년|회|점)?)/g,'<span class="result-number">$1</span>');
+}
+
+async function changeTone(btn, tone) {
+  document.querySelectorAll('.tone-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); state.currentTone = tone; await generateResume();
+}
+async function regenerate() { await generateResume(); }
+
+function copyResult() {
+  if (!state.generatedResume) return;
+  const r = state.generatedResume;
+  const lines = [`■ ${r.title}`,`${r.period} | ${r.role} | 기여도 ${r.contribution}% | ${r.teamSize}`,`사용 툴: ${(r.tools||[]).join(', ')}`,'','[ 담당 업무 ]',...(r.tasks||[]).map(t=>`• ${t}`),'','[ 성과 ]',...(r.achievements||[]).map(a=>`• ${a}`)].join('\n');
+  if (navigator.clipboard) { navigator.clipboard.writeText(lines).then(()=>showToast('클립보드에 복사됐어요 ✓')); }
+  else { const ta=document.createElement('textarea'); ta.value=lines; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); showToast('클립보드에 복사됐어요 ✓'); }
+}
+
+/* ═══════════════════════════════════
+   UTILITIES
+═══════════════════════════════════ */
+function showLoading(text,sub){ document.getElementById('loadingText').textContent=text; document.getElementById('loadingSub').textContent=sub; document.getElementById('loadingOverlay').classList.add('show'); }
+function hideLoading(){ document.getElementById('loadingOverlay').classList.remove('show'); }
+let toastTimer;
+function showToast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),3200); }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+function escHtml(str){ return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;'); }
+function escAttr(str){ return escHtml(str); }
+
+document.addEventListener('DOMContentLoaded', () => { init(); updateSlider(70); });
+</script>
+</body>
+</html>
