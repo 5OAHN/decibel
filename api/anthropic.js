@@ -12,12 +12,20 @@ module.exports = async function handler(req, res) {
   if (!apiKey) {
     return res.status(500).json({
       error: 'server_configuration_error',
-      message: '서버 설정 오류입니다. 관리자에게 문의해주세요.',
+      message: '서버 설정 오류입니다. ANTHROPIC_API_KEY를 확인해주세요.',
     });
   }
 
   const { prompt, type } = req.body || {};
-  if (!prompt) return res.status(400).json({ error: 'bad_request', message: 'prompt가 필요합니다.' });
+  if (!prompt || typeof prompt !== 'string') {
+    return res.status(400).json({ error: 'bad_request', message: 'prompt가 필요합니다.' });
+  }
+
+  // PDF 파싱 타입 포함
+  const allowedTypes = ['metrics', 'resume', 'parse'];
+  if (type && !allowedTypes.includes(type)) {
+    return res.status(400).json({ error: 'bad_request', message: '유효하지 않은 요청 타입입니다.' });
+  }
 
   try {
     const response = await fetch(ANTHROPIC_API_URL, {
@@ -44,4 +52,19 @@ module.exports = async function handler(req, res) {
     }
 
     if (!response.ok) {
-      return
+      return res.status(response.status).json({
+        error: data?.error?.type || 'api_error',
+        message: data?.error?.message || 'API 오류가 발생했습니다.',
+      });
+    }
+
+    return res.status(200).json(data);
+
+  } catch (err) {
+    console.error('[Decibel] 서버 오류:', err);
+    return res.status(500).json({
+      error: 'internal_server_error',
+      message: '일시적인 서버 오류입니다. 잠시 후 다시 시도해주세요.',
+    });
+  }
+};
