@@ -22,7 +22,7 @@ module.exports = async function handler(req, res) {
   }
 
   // PDF 파싱 타입 포함
-  const allowedTypes = ['metrics', 'resume', 'parse'];
+  const allowedTypes = ['metrics', 'resume', 'parse', 'interview'];
   if (type && !allowedTypes.includes(type)) {
     return res.status(400).json({ error: 'bad_request', message: '유효하지 않은 요청 타입입니다.' });
   }
