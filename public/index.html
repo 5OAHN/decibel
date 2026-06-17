@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>데시벨 — 경력기술서 자동 생성</title>
+<title>데시벨</title>
 <!-- PDF.js CDN -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <!-- 귀여운 폰트 -->
@@ -1313,37 +1313,28 @@ async function startLinkParsing() {
     return;
   }
 
-  // ── Mock 에러 조건: 비공개 URL ──
-  const isPrivate = url.toLowerCase().includes('private') || url.trim() === '';
-  showLoading('AI가 분석 중이에요', '잠깐만 기다려주세요...');
+  input.classList.remove('error');
+  showLoading('AI가 분석 중이에요', '링크 내용을 읽고 있어요...');
 
-  await sleep(1800); // 스크래핑 Mock 딜레이
+  try {
+    // ── 실제 백엔드 호출 (Jina Reader + Claude 분석) ──
+    const json   = await callApi('', 'link_parse', url);
+    const parsed = parseJsonFromResponse(json);
 
-  hideLoading();
+    applyParsedData(parsed);
+    document.getElementById('s2eyebrow').textContent = '2 / 3 · 링크 분석 결과 확인';
+    document.getElementById('s2title').textContent   = '링크에서 읽어왔어요, 확인해주세요';
+    document.getElementById('s2desc').textContent    = '링크에서 읽어온 내용이에요. 다르면 수정해주세요.';
+    document.getElementById('s2BackBtn').setAttribute('onclick', "goScreenStr('1c')");
+    goScreen(2);
 
-  if (isPrivate) {
+  } catch (e) {
+    console.error('[startLinkParsing]', e);
     input.classList.add('error');
-    showToast("비공개 링크거나 접근할 수 없어요. '웹에서 공유'가 켜져 있는지 확인해 주세요!");
-    return;
+    showToast(e.message || '링크 분석에 실패했어요. 다시 시도해주세요.');
+  } finally {
+    hideLoading();
   }
-
-  // ── 정상 케이스: Mock 파싱 데이터로 Screen 2 세팅 ──
-  applyParsedData({
-    projectName: '',
-    companyName: '',
-    startDate: '',
-    endDate: '',
-    position: '',
-    tools: [],
-    workContent: '',
-  });
-  document.getElementById('s2eyebrow').textContent = '2 / 3 · 링크 분석 결과 확인';
-  document.getElementById('s2title').textContent   = '링크에서 읽어왔어요, 확인해주세요';
-  document.getElementById('s2desc').textContent    = '링크에서 읽어온 내용이에요. 필요하면 수정하세요.';
-  document.getElementById('s2BackBtn').setAttribute('onclick', "goScreenStr('1c')");
-
-  // 실제 서비스에서는 여기서 /api/scrape 등을 호출해 파싱 데이터를 받아 applyParsedData() 에 전달
-  goScreen(2);
 }
 
 /* ═══════════════════════════════════
@@ -1430,10 +1421,13 @@ function getFormData() {
 /* ═══════════════════════════════════
    API 공통 호출
 ═══════════════════════════════════ */
-async function callApi(prompt, type) {
+async function callApi(prompt, type, url = null) {
+  const body = { prompt, type };
+  if (url) body.url = url;
+
   const res = await fetch('/api/anthropic', {
     method:'POST', headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({ prompt, type }),
+    body:JSON.stringify(body),
   });
   if (res.status === 429) {
     const data = await res.json().catch(() => ({}));
@@ -1441,6 +1435,7 @@ async function callApi(prompt, type) {
   }
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
+    // 서버가 던진 에러 메시지를 그대로 Toast에 전달
     throw new Error(data.message || `서버 오류 (${res.status})`);
   }
   return res.json();
