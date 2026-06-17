@@ -212,28 +212,81 @@ body{
 .btn-secondary:hover{ background:var(--gray-200); }
 .btn-secondary:active{ transform:scale(.98); }
 .btn-row{ display:flex; gap:var(--space-8); }
-/* ── Interview Choice Buttons ── */
-.interview-choice-btn{
-  display:flex; align-items:center; gap:12px;
-  padding:13px 16px; width:100%;
+/* ══════════════════════════════
+   PROGRESSIVE DISCLOSURE INTERVIEW
+══════════════════════════════ */
+.iq-block{
+  opacity:0; transform:translateY(24px); pointer-events:none;
+  transition:opacity .4s cubic-bezier(.4,0,.2,1), transform .4s cubic-bezier(.4,0,.2,1);
+}
+.iq-block.iq-first{ opacity:1; transform:translateY(0); pointer-events:auto; }
+.iq-block.show{ opacity:1; transform:translateY(0); pointer-events:auto; }
+.iq-block.done{
+  opacity:.38; filter:grayscale(30%); pointer-events:auto; cursor:pointer;
+  transition:opacity .3s, filter .3s, transform .4s cubic-bezier(.4,0,.2,1);
+}
+.iq-block.done:hover,.iq-block.done.refocus{ opacity:1; filter:none; }
+.iq-header{ display:flex; align-items:flex-start; gap:10px; margin-bottom:14px; }
+.iq-num{
+  flex-shrink:0; width:26px; height:26px; border-radius:50%;
+  background:var(--blue-500); color:white; font-size:12px; font-weight:700;
+  display:flex; align-items:center; justify-content:center; transition:background .2s;
+}
+.iq-block.done .iq-num{ background:var(--green-500); }
+.iq-block.done .iq-num-text{ display:none; }
+.iq-block.done .iq-num::after{ content:'✓'; font-size:12px; }
+.iq-question{ font-size:15px; font-weight:600; color:var(--gray-900); line-height:1.55; }
+.iq-choices{ display:flex; flex-direction:column; gap:8px; margin-bottom:12px; }
+.iq-chip{
+  display:flex; align-items:center; gap:12px; padding:13px 16px; width:100%;
   border:1.5px solid var(--gray-200); border-radius:var(--radius-md);
   background:white; cursor:pointer; text-align:left;
   font-family:inherit; font-size:14px; font-weight:500; color:var(--gray-800);
-  transition:all .12s;
+  transition:border-color .12s, background .12s, transform .08s;
+  -webkit-tap-highlight-color:transparent;
 }
-.interview-choice-btn:hover{ border-color:var(--blue-500); background:var(--blue-50); }
-.interview-choice-btn.selected{ border-color:var(--blue-500); background:var(--blue-50); color:var(--blue-600); font-weight:600; }
-.choice-radio{
-  width:18px; height:18px; border-radius:50%; border:2px solid var(--gray-300);
-  flex-shrink:0; display:flex; align-items:center; justify-content:center; transition:all .12s;
+.iq-chip:hover{ border-color:var(--blue-500); background:var(--blue-50); }
+.iq-chip:active{ transform:scale(.985); }
+.iq-chip.selected{ border-color:var(--blue-500); background:var(--blue-50); color:var(--blue-600); font-weight:600; }
+.iq-radio{
+  flex-shrink:0; width:18px; height:18px; border-radius:50%; border:2px solid var(--gray-300);
+  display:flex; align-items:center; justify-content:center; transition:all .12s;
 }
-.interview-choice-btn.selected .choice-radio{
-  border-color:var(--blue-500); background:var(--blue-500);
+.iq-chip.selected .iq-radio{ border-color:var(--blue-500); background:var(--blue-500); }
+.iq-chip.selected .iq-radio::after{ content:''; width:6px; height:6px; border-radius:50%; background:white; }
+.iq-chip-text{ flex:1; line-height:1.5; }
+.iq-custom-row{ display:flex; gap:8px; align-items:center; margin-top:4px; }
+.iq-custom-input{
+  flex:1; padding:12px 14px; border:1.5px solid var(--gray-200); border-radius:var(--radius-md);
+  font-size:14px; color:var(--gray-900); background:white; font-family:inherit;
+  transition:border-color .15s, box-shadow .15s;
 }
-.interview-choice-btn.selected .choice-radio::after{
-  content:''; width:6px; height:6px; border-radius:50%; background:white;
+.iq-custom-input:focus{ outline:none; border-color:var(--blue-500); box-shadow:0 0 0 3px rgba(49,130,246,.12); }
+.iq-custom-input::placeholder{ color:var(--gray-400); }
+.iq-confirm-btn{
+  flex-shrink:0; padding:12px 16px; background:var(--blue-500); color:white;
+  border:none; border-radius:var(--radius-md); font-size:14px; font-weight:700;
+  font-family:inherit; cursor:pointer; white-space:nowrap; transition:background .12s, transform .08s;
 }
-.choice-text{ flex:1; line-height:1.5; }
+.iq-confirm-btn:hover{ background:var(--blue-600); }
+.iq-confirm-btn:active{ transform:scale(.96); }
+.iq-textarea{
+  width:100%; min-height:90px; padding:12px 14px;
+  border:1.5px solid var(--gray-200); border-radius:var(--radius-md);
+  font-size:14px; color:var(--gray-900); background:white;
+  font-family:inherit; resize:vertical; line-height:1.7;
+  transition:border-color .15s, box-shadow .15s;
+}
+.iq-textarea:focus{ outline:none; border-color:var(--blue-500); box-shadow:0 0 0 3px rgba(49,130,246,.12); }
+.iq-textarea::placeholder{ color:var(--gray-400); }
+.iq-spacer{ height:28px; }
+.iq-answer-preview{
+  display:none; margin-top:8px; padding:8px 12px;
+  background:var(--gray-50); border-radius:var(--radius-sm);
+  font-size:13px; color:var(--gray-600); line-height:1.5;
+}
+.iq-block.done .iq-answer-preview{ display:block; }
+#interviewNextBtn:disabled{ background:var(--gray-200); color:var(--gray-400); cursor:not-allowed; transform:none; }
 
 /* 텍스트 버튼 (첫화면 돌아가기 등) */
 .btn-text{
@@ -620,7 +673,7 @@ body{
       <div class="form-group">
         <label class="form-label">사용 기술 / 툴</label>
         <div class="tag-group" id="toolTags"></div>
-        <input class="form-input" id="customTool" type="text" placeholder="직접 입력 후 Enter" style="margin-top:10px;" onkeydown="addCustomTag(event)">
+        <input class="form-input" id="customTool" type="text" placeholder="직접 입력 후 Enter" style="margin-top:10px;" onkeydown="addCustomTag(event)" onblur="addCustomTagOnBlur(this)">
       </div>
       <hr class="divider">
       <div class="form-group">
@@ -644,16 +697,16 @@ body{
 
   <!-- ══ SCREEN 2B: 심층 인터뷰 ══ -->
   <div class="screen" id="screen-2b">
-    <div class="section-wrap" style="flex:1;">
+    <div class="section-wrap" style="flex:1;padding-bottom:8px;">
       <div class="step-eyebrow">심층 인터뷰</div>
       <div class="section-title">조금 더 알려주세요 🎤</div>
-      <div class="section-desc">입력한 내용을 바탕으로 AI가 질문을 만들었어요.<br>답할수록 수치가 더 정확해져요.</div>
+      <div class="section-desc">질문에 답하면 더 정확한 수치를 제안할 수 있어요.<br>객관식을 고르거나 직접 입력해도 돼요.</div>
       <div id="interviewContainer"></div>
     </div>
     <div class="bottom-bar">
       <div class="btn-row">
         <button class="btn btn-secondary" style="flex:1;" onclick="goScreen(2)">이전</button>
-        <button class="btn btn-primary" style="flex:2;" onclick="goToMetrics()">수치 제안받기</button>
+        <button class="btn btn-primary" style="flex:2;" id="interviewNextBtn" onclick="goToMetrics()" disabled>수치 제안받기</button>
       </div>
     </div>
   </div>
@@ -1182,12 +1235,21 @@ function updateSlider(val) {
 }
 function addCustomTag(e) {
   if (e.key !== 'Enter') return;
-  const val = e.target.value.trim(); if (!val) return;
+  e.preventDefault();
+  _commitCustomTag(e.target);
+}
+function addCustomTagOnBlur(input) {
+  _commitCustomTag(input);
+}
+function _commitCustomTag(input) {
+  const val = input.value.trim(); if (!val) return;
+  const existing = [...document.querySelectorAll('#toolTags .tag')].map(t => t.textContent.trim());
+  if (existing.includes(val)) { input.value = ''; return; }
   const tag = document.createElement('span');
   tag.className = 'tag selected'; tag.textContent = val;
   tag.onclick = function() { this.classList.toggle('selected'); };
   document.getElementById('toolTags').appendChild(tag);
-  e.target.value = '';
+  input.value = '';
 }
 function addHint(text) {
   const ta = document.getElementById('workContent');
@@ -1296,83 +1358,168 @@ function renderInterview(questions) {
   container.innerHTML = '';
   state.interviewAnswers = {};
 
+  const totalQ = questions.length;
+  const completedSet = new Set();
+
+  function checkAllDone() {
+    const btn = document.getElementById('interviewNextBtn');
+    if (btn) btn.disabled = completedSet.size < totalQ;
+  }
+
+  function markDone(qId, answerText, block) {
+    completedSet.add(qId);
+    block.classList.add('done');
+    const preview = block.querySelector('.iq-answer-preview');
+    if (preview) preview.textContent = '\u2713 ' + answerText;
+    checkAllDone();
+    revealNext(block);
+  }
+
+  function revealNext(currentBlock) {
+    const all = [...container.querySelectorAll('.iq-block')];
+    let found = false;
+    for (const b of all) {
+      if (found && !b.classList.contains('show') && !b.classList.contains('iq-first')) {
+        setTimeout(() => {
+          b.classList.add('show');
+          setTimeout(() => {
+            b.scrollIntoView({ behavior:'smooth', block:'center' });
+            const ta = b.querySelector('.iq-textarea');
+            if (ta) setTimeout(() => ta.focus(), 300);
+          }, 80);
+        }, 150);
+        break;
+      }
+      if (b === currentBlock) found = true;
+    }
+  }
+
   questions.forEach((q, qi) => {
-    state.interviewAnswers[q.id] = { selected: '', custom: '' };
+    state.interviewAnswers[q.id] = { selected:'', custom:'' };
 
-    const wrap = document.createElement('div');
-    wrap.className = 'interview-q-wrap';
-    wrap.style.cssText = 'margin-bottom:28px;';
+    const block = document.createElement('div');
+    block.className = 'iq-block' + (qi === 0 ? ' iq-first' : '');
+    block.dataset.qid = q.id;
 
-    // 질문 번호 + 텍스트
-    const qHeader = document.createElement('div');
-    qHeader.style.cssText = 'display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;';
-    qHeader.innerHTML = `
-      <span style="flex-shrink:0;width:24px;height:24px;border-radius:50%;background:var(--blue-500);color:white;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;">${qi+1}</span>
-      <span style="font-size:15px;font-weight:600;color:var(--gray-900);line-height:1.5;">${escHtml(q.question)}</span>
-    `;
-    wrap.appendChild(qHeader);
+    block.addEventListener('click', function() {
+      if (!this.classList.contains('done')) return;
+      this.classList.remove('done');
+      this.classList.add('refocus');
+      completedSet.delete(q.id);
+      let found2 = false;
+      container.querySelectorAll('.iq-block').forEach(b => {
+        if (found2) {
+          b.classList.remove('show','done');
+          const qid2 = b.dataset.qid;
+          completedSet.delete(qid2);
+          state.interviewAnswers[qid2] = { selected:'', custom:'' };
+          const prev2 = b.querySelector('.iq-answer-preview');
+          if (prev2) prev2.textContent = '';
+        }
+        if (b === this) found2 = true;
+      });
+      checkAllDone();
+      setTimeout(() => this.classList.remove('refocus'), 600);
+    });
+
+    const header = document.createElement('div');
+    header.className = 'iq-header';
+    header.innerHTML = '<div class="iq-num"><span class="iq-num-text">' + (qi+1) + '</span></div><div class="iq-question">' + escHtml(q.question) + '</div>';
+    block.appendChild(header);
 
     if (q.type === 'choice' && q.choices) {
-      // 선택지 버튼들
-      const choiceWrap = document.createElement('div');
-      choiceWrap.style.cssText = 'display:flex;flex-direction:column;gap:8px;';
-      q.choices.forEach((choice, ci) => {
-        const btn = document.createElement('button');
-        btn.className = 'interview-choice-btn';
-        btn.dataset.qid = q.id;
-        btn.dataset.value = choice;
-        btn.innerHTML = `<span class="choice-radio"></span><span class="choice-text">${escHtml(choice)}</span>`;
-        btn.onclick = function() {
-          // 같은 질문의 모든 버튼 선택 해제
-          choiceWrap.querySelectorAll('.interview-choice-btn').forEach(b => b.classList.remove('selected'));
-          this.classList.add('selected');
+      const choicesDiv = document.createElement('div');
+      choicesDiv.className = 'iq-choices';
+      q.choices.forEach(choice => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'iq-chip';
+        chip.innerHTML = '<span class="iq-radio"></span><span class="iq-chip-text">' + escHtml(choice) + '</span>';
+        chip.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (block.classList.contains('done')) return;
+          choicesDiv.querySelectorAll('.iq-chip').forEach(c => c.classList.remove('selected'));
+          chip.classList.add('selected');
           state.interviewAnswers[q.id].selected = choice;
-        };
-        choiceWrap.appendChild(btn);
+          state.interviewAnswers[q.id].custom = '';
+          const ci = block.querySelector('.iq-custom-input');
+          if (ci) ci.value = '';
+          setTimeout(() => markDone(q.id, choice, block), 180);
+        });
+        choicesDiv.appendChild(chip);
       });
-      wrap.appendChild(choiceWrap);
+      block.appendChild(choicesDiv);
 
-      // 직접 입력 (선택지 아래)
-      const customWrap = document.createElement('div');
-      customWrap.style.cssText = 'margin-top:10px;';
+      const customRow = document.createElement('div');
+      customRow.className = 'iq-custom-row';
       const customInput = document.createElement('input');
       customInput.type = 'text';
-      customInput.className = 'form-input';
-      customInput.placeholder = '또는 직접 입력해주세요 (선택)';
-      customInput.style.cssText = 'font-size:14px;';
-      customInput.oninput = function() {
-        state.interviewAnswers[q.id].custom = this.value;
-        // 직접 입력 시 선택지 해제
-        if (this.value) {
-          choiceWrap.querySelectorAll('.interview-choice-btn').forEach(b => b.classList.remove('selected'));
+      customInput.className = 'iq-custom-input';
+      customInput.placeholder = '직접 입력...';
+      customInput.addEventListener('input', () => {
+        if (customInput.value.trim()) {
+          choicesDiv.querySelectorAll('.iq-chip').forEach(c => c.classList.remove('selected'));
           state.interviewAnswers[q.id].selected = '';
         }
+        state.interviewAnswers[q.id].custom = customInput.value;
+      });
+      const confirmBtn = document.createElement('button');
+      confirmBtn.type = 'button';
+      confirmBtn.className = 'iq-confirm-btn';
+      confirmBtn.textContent = '확인';
+      const triggerCustom = () => {
+        const val = customInput.value.trim();
+        if (!val) { showToast('내용을 입력해주세요'); return; }
+        if (block.classList.contains('done')) return;
+        state.interviewAnswers[q.id].custom = val;
+        state.interviewAnswers[q.id].selected = '';
+        markDone(q.id, val, block);
       };
-      customWrap.appendChild(customInput);
-      wrap.appendChild(customWrap);
+      confirmBtn.addEventListener('click', (e) => { e.stopPropagation(); triggerCustom(); });
+      customInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); triggerCustom(); } });
+      customRow.appendChild(customInput);
+      customRow.appendChild(confirmBtn);
+      block.appendChild(customRow);
 
     } else {
-      // 자유 입력 (q4)
       const ta = document.createElement('textarea');
-      ta.className = 'form-textarea';
-      ta.style.cssText = 'min-height:90px;font-size:14px;';
-      ta.placeholder = '자유롭게 작성해주세요. 수치가 있다면 더 좋아요! (예: 월 방문자 3만명, 팀원 8명 등)';
-      ta.oninput = function() { state.interviewAnswers[q.id].custom = this.value; };
-      wrap.appendChild(ta);
+      ta.className = 'iq-textarea';
+      ta.placeholder = '자유롭게 작성해주세요. 수치가 있다면 더 좋아요!\n예) 월 방문자 3만명, 팀원 8명, 3개월 만에 런칭 등';
+      ta.addEventListener('input', () => { state.interviewAnswers[q.id].custom = ta.value; });
+      block.appendChild(ta);
+      const freeRow = document.createElement('div');
+      freeRow.className = 'iq-custom-row';
+      freeRow.style.marginTop = '8px';
+      const freeBtn = document.createElement('button');
+      freeBtn.type = 'button';
+      freeBtn.className = 'iq-confirm-btn';
+      freeBtn.textContent = '완료';
+      const triggerFree = () => {
+        const val = ta.value.trim();
+        if (!val) { showToast('내용을 입력해주세요'); return; }
+        if (block.classList.contains('done')) return;
+        state.interviewAnswers[q.id].custom = val;
+        markDone(q.id, val.length > 30 ? val.slice(0,30) + '\u2026' : val, block);
+      };
+      freeBtn.addEventListener('click', (e) => { e.stopPropagation(); triggerFree(); });
+      ta.addEventListener('keydown', (e) => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) { e.preventDefault(); triggerFree(); } });
+      freeRow.appendChild(freeBtn);
+      block.appendChild(freeRow);
     }
 
-    // 구분선 (마지막 제외)
-    if (qi < questions.length - 1) {
-      const hr = document.createElement('hr');
-      hr.className = 'divider';
-      hr.style.marginTop = '28px';
-      wrap.appendChild(hr);
-    }
+    const preview = document.createElement('div');
+    preview.className = 'iq-answer-preview';
+    block.appendChild(preview);
 
-    container.appendChild(wrap);
+    const spacer = document.createElement('div');
+    spacer.className = 'iq-spacer';
+    block.appendChild(spacer);
+
+    container.appendChild(block);
   });
-}
 
+  checkAllDone();
+}
 function getInterviewSummary() {
   const lines = [];
   state.interviewQuestions.forEach(q => {
