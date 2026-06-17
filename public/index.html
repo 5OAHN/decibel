@@ -1305,7 +1305,7 @@ async function goToInterview() {
   state.projectData = data;
   state.interviewAnswers = {};
 
-  showLoading('질문을 만들고 있어요', '입력한 내용을 분석하고 있어요...');
+  showLoading('AI가 분석 중이에요', '잠깐만 기다려주세요...');
   try {
     const prompt = buildInterviewPrompt(data);
     const json   = await callApi(prompt, 'interview');
@@ -1534,7 +1534,7 @@ function getInterviewSummary() {
    SCREEN 3: 수치 제안
 ═══════════════════════════════════ */
 async function goToMetrics() {
-  showLoading('수치를 분석하고 있어요','잠깐만 기다려주세요...');
+  showLoading('AI가 분석 중이에요', '잠깐만 기다려주세요...');
   try {
     const interviewSummary = getInterviewSummary();
     const json   = await callApi(buildMetricsPrompt(state.projectData, interviewSummary), 'metrics');
@@ -1604,7 +1604,7 @@ function renderMetrics(metrics) {
    SCREEN 4: 경력기술서 생성
 ═══════════════════════════════════ */
 async function generateResume() {
-  showLoading('경력기술서를 작성하고 있어요','멋진 문장으로 다듬고 있어요 ✍️');
+  showLoading('AI가 분석 중이에요', '잠깐만 기다려주세요...');
   try {
     const json   = await callApi(buildResumePrompt(state.projectData, state.selectedMetrics, state.currentTone), 'resume');
     const resume = parseJsonFromResponse(json);
